@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <devices>
+        <device id="Edge_Device1">
+            <mips>10000</mips>
+            <storage>40000</storage>
+            <latitude>40.7128</latitude>
+            <longitude>-74.0060</longitude>
+            <wlan_id>0</wlan_id>
+            <attractiveness>0</attractiveness>
+        </device>
+        <device id="Edge_Device2">
+            <mips>80000</mips>
+            <storage>40000</storage>
+            <latitude>40.7128</latitude>
+            <longitude>-74.0059</longitude>
+            <wlan_id>1</wlan_id>
+            <attractiveness>1</attractiveness>
+        </device>
+        <!-- 更多设备 -->
+    </devices>
+</config>

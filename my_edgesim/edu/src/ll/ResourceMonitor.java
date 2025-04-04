@@ -7,5 +7,7 @@ class ResourceMonitor {
         System.out.println("Bandwidth: " + device.getBandwidth());
         System.out.println("Task queue length: " + device.taskQueue.size());
     }
+
+    public double getGSMBandwidth(){}
 }
 

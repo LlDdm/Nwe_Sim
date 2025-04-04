@@ -6,13 +6,15 @@ public class MobileDevice {
     private double mobiledevice_longitude;
     private int mobiledevice_attractiveness;
     private int connectionType; //0:lan,1:wlan
+    private int deviceId;
 
-    public MobileDevice(APP app, double latitude, double longitude, int attractiveness, int connectionType) {
+    public MobileDevice(APP app, double latitude, double longitude, int attractiveness, int connectionType, int deviceId) {
         this.app = app;
         this.mobiledevice_latitude = latitude;
         this.mobiledevice_longitude = longitude;
         this.mobiledevice_attractiveness = attractiveness;
         this.connectionType = connectionType;
+        this.deviceId = deviceId;
     }
     public APP getApp() {
         return app;
@@ -30,4 +32,6 @@ public class MobileDevice {
     public int getConnectionType() {
         return connectionType;
     }
+
+    public int getDeviceId() { return deviceId; }
 }

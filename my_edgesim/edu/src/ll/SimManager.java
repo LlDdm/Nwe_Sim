@@ -103,6 +103,10 @@ public class SimManager{
 
     public ResourceMonitor getResourceMonitor(){ return resourceMonitor; }
 
+    public EdgeDeviceGeneratorModel getEdgeDeviceGeneratorModel(){
+        return edgeDeviceGeneratorModel;
+    }
+
 
 
 }

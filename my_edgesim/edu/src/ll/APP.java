@@ -11,9 +11,10 @@ public class APP {
     private double CCR;
     private double shape_factor;
     private double completeTime;
+    private int mobileDeviceId;
 
     public APP(int Appid, String AppName, double startTime,double deadline,
-               long inputsize, long outputsize, long lenth, DAG dag,double CCR, double shape_factor) {
+               long inputsize, long outputsize, long lenth, DAG dag,double CCR, double shape_factor ,int mobileDeviceId) {
         this.Appid = Appid;
         this.AppName = AppName;
         this.startTime = startTime;
@@ -24,6 +25,7 @@ public class APP {
         this.dag = dag;
         this.CCR = CCR;
         this.shape_factor = shape_factor;
+        this.mobileDeviceId = mobileDeviceId;
     }
 
     public int getAppid() {
@@ -113,6 +115,8 @@ public class APP {
     public void setStartTime(double startTime) {
         this.startTime = startTime;
     }
+
+    public int getMobileDeviceId() { return mobileDeviceId; }
 
 }
 

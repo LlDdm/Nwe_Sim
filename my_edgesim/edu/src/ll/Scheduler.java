@@ -1,9 +1,21 @@
 package ll;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 class Scheduler {
+    private LinkedList<APP> apps;
+    private Queue<Task> preparedTasks;
+
+    public Scheduler() {}
+
+    public synchronized void addApp(APP app) { apps.add(app); }
+    public void addPreparedTask(Task task) { preparedTasks.offer(task); }
+
     public static void allocateTaskToDevice(EdgeDevice device, Task task) {
         device.addTask(task);
     }
+
 
     // 自动分配任务到空闲设备，改进的任务调度方法
     public static void allocateTasksToDevices(EdgeDevice[] devices, Task[] tasks) {

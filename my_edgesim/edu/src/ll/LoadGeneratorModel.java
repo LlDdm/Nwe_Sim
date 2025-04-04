@@ -67,7 +67,7 @@ public class LoadGeneratorModel {
             }
             String AppName = SimSettings.getInstance().getAppName(randomAppType);
 
-            //随机连接方式：lan or wlan
+            //随机连接方式：0,lan or 1,wlan or 2,GSM
             int randomconnectionType = -1;
             double connectionTypeSelector = SimUtils.getRandomDoubleNumber(0, 100);
             double connectionTypePercentage = 0;
@@ -157,8 +157,10 @@ public class LoadGeneratorModel {
                 DAG dag = generateDAG(avg_task_num, depth_of_DAG, max_width, avg_task_size, avg_task_tra_size, ev_ds,
                         appinputSize, appoutputSize, i);
 
-                appList.add(new APP(i,AppName,virtualTime,simulationTime,appinputSize,appoutputSize,
-                        applength,dag,CCR,shape_factor));
+                APP app = new APP(i,AppName,virtualTime,simulationTime,appinputSize,appoutputSize,
+                        applength,dag,CCR,shape_factor,i);
+
+                appList.add(app);
 
                 //移动设备位置随机设置
                 int random_edgedevice = rng.nextInt(SimSettings.getInstance().getEdgedeviceLookUpTable().length);
@@ -168,9 +170,8 @@ public class LoadGeneratorModel {
                 mobiledevice_longitude = SimUtils.getRandomDoubleNumber(mobiledevice_longitude - 5, mobiledevice_longitude + 5);
                 int mobiledevice_attractiveness = (int)SimSettings.getInstance().getEdgedeviceLookUpTable()[random_edgedevice][5];
 
-                mobileDevices.add(new MobileDevice(new APP(i,AppName,virtualTime,simulationTime,appinputSize,appoutputSize,
-                        applength,dag,CCR,shape_factor),moniledevice_latitude,mobiledevice_longitude, mobiledevice_attractiveness,
-                        randomconnectionType));
+                mobileDevices.add(new MobileDevice(app,moniledevice_latitude,mobiledevice_longitude, mobiledevice_attractiveness,
+                        randomconnectionType,i));
                 // Assuming the creation of a workflow and its DAG is based on appType and inputFileSize
 
                 //long outputFileSize =(long)SimSettings.getInstance().getAppLookUpTable()[randomTaskType][6];

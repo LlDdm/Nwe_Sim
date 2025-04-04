@@ -63,11 +63,12 @@ class NetWork {
         this.MAN_BW = SimSettings.getInstance().getManBandwidth();
         this.WAN_BW = SimSettings.getInstance().getWanBandwidth();
         for(int i=0; i<NumofAttractiveness;i++){
-            this.attractiveness_BW[i][0] = max(SimSettings.getInstance().getLanBandwidth()-devicecount(i),20);
-            this.attractiveness_BW[i][1] = max(SimSettings.getInstance().getWlanBandwidth()-devicecount(i),20);
-            this.attractiveness_BW[i][2] = max(SimSettings.getInstance().getGsmBandwidth()-devicecount(i),20);
+            this.attractiveness_BW[i][0] = SimSettings.getInstance().getLanBandwidth();
+            this.attractiveness_BW[i][1] = SimSettings.getInstance().getWlanBandwidth();
+            this.attractiveness_BW[i][2] = SimSettings.getInstance().getGsmBandwidth();
         }
     }
+
 
 }
 

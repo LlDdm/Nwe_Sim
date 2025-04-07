@@ -7,8 +7,7 @@ class EdgeDevice{
     private int deviceId;
     private double mips;   // 处理能力
     private double storage;         // 带宽
-    private double latitude;          // 纬度
-    private double longitude;         // 经度
+    private final double[] location = new double[2];          // 纬度     // 经度
     private double wlan_id;
     private double attractiveness;
     private Queue<Task> taskQueue;    // 任务队列
@@ -25,8 +24,8 @@ class EdgeDevice{
         this.deviceId = deviceId;
         this.mips = mips;
         this.storage = storage;
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.location[0] = latitude;
+        this.location[1] = longitude;
         this.wlan_id = wlan_id;
         this.attractiveness = attractiveness;
         this.taskQueue = new LinkedList<>();
@@ -60,14 +59,6 @@ class EdgeDevice{
         return storage;
     }
 
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
     public boolean isProcessing() {
         return isProcessing;
     }
@@ -96,11 +87,8 @@ class EdgeDevice{
         return wlan_id;
     }
 
-    public double getlatitude(){
-        return latitude;
-    }
-    public double getlongitude(){
-        return longitude;
+    public double[] getlocation() {
+        return location;
     }
 
     public Queue<Task> getTaskQueue() {
@@ -202,23 +190,5 @@ class EdgeDevice{
 
     }
 
-
-    public double calculateDistance(EdgeDevice other) {
-        double lat1 = Math.toRadians(this.latitude);
-        double lon1 = Math.toRadians(this.longitude);
-        double lat2 = Math.toRadians(other.getLatitude());
-        double lon2 = Math.toRadians(other.getLongitude());
-
-        double dLat = lat2 - lat1;
-        double dLon = lon2 - lon1;
-
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1) * Math.cos(lat2) *
-                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        final double R = 6371; // Radius of Earth in km
-        return R * c;  // Returns the distance in kilometers
-    }
 }
 

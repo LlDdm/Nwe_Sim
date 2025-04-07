@@ -33,4 +33,6 @@ public interface ScenarioFactory {
 
     public ResourceMonitor getResourceMonitor();
 
+    public NativeEdgeDeviceGenerator getNativeEdgeDeviceGenerator();
+
 }

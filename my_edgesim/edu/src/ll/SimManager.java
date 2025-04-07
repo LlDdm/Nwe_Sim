@@ -27,6 +27,7 @@ public class SimManager{
     private Scheduler scheduler;
     private LoadGeneratorModel loadGeneratorModel;
     private ResourceMonitor resourceMonitor;
+    private NativeEdgeDeviceGenerator nativeEdgeDeviceGenerator;
 
     private static SimManager instance = null;
 
@@ -36,23 +37,32 @@ public class SimManager{
         numOfMobileDevice = _numOfMobileDevice;
         orchestratorPolicy = _orchestratorPolicy;
 
-        System.out.println("Creating tasks...");
+        System.out.println("Creating Loads...");
         loadGeneratorModel = scenarioFactory.getLoadGeneratorModel();
         loadGeneratorModel.initializeModel();
         System.out.println("Done.");
 
-        System.out.println("Creating devices...");
+        System.out.println("Creating Devices...");
         edgeDeviceGeneratorModel = scenarioFactory.getDeviceGeneratorModel();
         edgeDeviceGeneratorModel.initialize();
         System.out.println("Done.");
 
+        System.out.println("Creating NativeEdgeDevices...");
+        nativeEdgeDeviceGenerator = scenarioFactory.getNativeEdgeDeviceGenerator();
+        nativeEdgeDeviceGenerator.initialize();
+        System.out.println("Done.");
+
         //Generate network model
+        System.out.println("Creating Networks...");
         networkModel = scenarioFactory.getNetworkModel();
         networkModel.initialize();
+        System.out.println("Done.");
 
         //Generate edge orchestrator
+        System.out.println("Creating Schedulers...");
         scheduler = scenarioFactory.getScheduler();
         scheduler.initialize();
+        System.out.println("Done.");
 
         resourceMonitor = scenarioFactory.getResourceMonitor();
         resourceMonitor.initialize();
@@ -106,6 +116,8 @@ public class SimManager{
     public EdgeDeviceGeneratorModel getEdgeDeviceGeneratorModel(){
         return edgeDeviceGeneratorModel;
     }
+
+    public NativeEdgeDeviceGenerator getNativeEdgeDeviceGenerator(){ return nativeEdgeDeviceGenerator; }
 
 
 

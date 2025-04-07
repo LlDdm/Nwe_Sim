@@ -118,5 +118,9 @@ public class APP {
 
     public int getMobileDeviceId() { return mobileDeviceId; }
 
+    public Task getstartTask(){ return dag.getTask(-1);}
+
+    public Task getendTask(){ return dag.getTask(-2);}
+
 }
 

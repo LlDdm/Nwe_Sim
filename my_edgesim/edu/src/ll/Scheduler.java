@@ -6,8 +6,13 @@ import java.util.Queue;
 class Scheduler {
     private LinkedList<APP> apps;
     private Queue<Task> preparedTasks;
+    private String orchestratorPolicy;
+    private String simScenario;
 
-    public Scheduler() {}
+    public Scheduler(String orchestratorPolicy, String simScenario) {
+        this.orchestratorPolicy = orchestratorPolicy;
+        this.simScenario = simScenario;
+    }
 
     public synchronized void addApp(APP app) { apps.add(app); }
     public void addPreparedTask(Task task) { preparedTasks.offer(task); }

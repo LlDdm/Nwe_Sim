@@ -2,7 +2,7 @@ package ll;
 
 import java.util.*;
 
-class DAG {
+public class DAG {
     private List<Task> tasks;
 
     DAG() {
@@ -13,11 +13,11 @@ class DAG {
         tasks.add(task);
     }
 
-    List<Task> getTasks() {
+    public List<Task> getTasks() {
         return tasks;
     }
 
-    Task getTask(int id) {
+    public Task getTask(int id) {
         for (Task task : tasks) {
             if (task.get_taskId() == id) {
                 return task;
@@ -27,7 +27,7 @@ class DAG {
         return null; // 或者 throw new NoSuchElementException("No Task with such ID found");
     }
 
-    List<Task> topologicalSort() {
+    public List<Task> topologicalSort() {
         List<Task> sortedTasks = new ArrayList<>();
         HashMap<Integer, Integer> outDegree = new HashMap<>();
         Queue<Task> queue = new LinkedList<>();

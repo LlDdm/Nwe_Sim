@@ -53,6 +53,10 @@ public class LScenarioFactory implements ScenarioFactory {
         return new ResourceMonitor();
     }
 
+    @Override
+    public NativeEdgeDeviceGenerator getNativeEdgeDeviceGenerator() {
+        return new NativeEdgeDeviceGenerator();
+    }
 }
 
 

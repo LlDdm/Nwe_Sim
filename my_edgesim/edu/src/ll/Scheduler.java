@@ -460,21 +460,58 @@ class Scheduler {
 
     public void backward_predicting(List<Task> sorted_tasks,Map<Integer, EdgeDevice> devices, NetWork netWork, List<MobileDevice> mobileDevices,
                                     EdgeDevice this_edgeDevice, DAG dag, EdgeDevice cloud) {
-        EdgeDevice targetDevice = null;
-        List<EdgeDevice> matchedDevices = new ArrayList<>(); // 存储满足第一步要求的设备
-        long Min_EstimateComplete_time = Long.MAX_VALUE;
-        long estimateCompleteTime_and_traDelay;
+        devices.remove(0);//LL算法在分配设备时先不考虑云
 
         sorted_tasks.sort(Comparator.comparing(Task::getR).reversed());
         for(Task task : sorted_tasks) {
+            long tra_delay = 0;
+            long Min_delay = Long.MAX_VALUE;
+            double distance;
+            long BW;
+            List<Integer> matchedDevices_id = new ArrayList<>();
+
             for(Map.Entry<Integer, EdgeDevice> entry : devices.entrySet()){
+                task.setPredicting_complete_time((long) (entry.getValue().getQueueTask_EstimateMaxComplete() + Math.ceil(task.getSize() * 2 / entry.getValue().getMips()) + entry.getValue().getIdle()));
                 if(task.getSuccessors().get(0).get_taskId() == -2) {
-                       task.setPredicting_start_time(entry.getValue().getQueueTask_EstimateMaxComplete());
+                    if (this_edgeDevice.getDeviceId() == entry.getValue().getDeviceId()) {
+                        tra_delay = 0;
+                    } else {
+                        distance = calculateDistance(entry.getValue().getlocation(), this_edgeDevice.getlocation());
+                        BW = calculateBW(entry.getValue(), this_edgeDevice, netWork);
+                        tra_delay = EstimateTra_delay(task, task.getSuccessors().get(0), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
+                    }
+                }else {
+                    int sucDevice_num = 0;
+                    for(Task suc : task.getSuccessors()) {
+                        for(int deviceID : suc.getPredicting_device_Id()){
+                            EdgeDevice Pred_sucDevice = devices.get(deviceID);
+                            if(entry.getValue().getDeviceId() == Pred_sucDevice.getDeviceId()) {
+                                tra_delay += 0;
+                            }else {
+                                distance = calculateDistance(entry.getValue().getlocation(), Pred_sucDevice.getlocation());
+                                BW = calculateBW(entry.getValue(), Pred_sucDevice, netWork);
+                                tra_delay += EstimateTra_delay(task,suc, distance, BW, Pred_sucDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
+                            }
+                            sucDevice_num++;
+                        }
+                    }
+                    tra_delay = tra_delay / sucDevice_num;
+                }
+                if(tra_delay <= Min_delay) {
+                    if(tra_delay < Min_delay){
+                        Min_delay = tra_delay;
+                        if(!matchedDevices_id.isEmpty()){
+                            matchedDevices_id.clear();
+                        }
+                        matchedDevices_id.add(entry.getValue().getDeviceId());
+                    }
+                    else {
+                        matchedDevices_id.add(entry.getValue().getDeviceId());
+                    }
                 }
             }
-
+            task.setPredicting_device_Id(matchedDevices_id);
         }
-
     }
 
 }

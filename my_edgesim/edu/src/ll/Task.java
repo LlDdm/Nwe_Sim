@@ -33,7 +33,7 @@ class Task {
     private int mobileDeviceId;
     private boolean is_complete;
     private List<Integer> predicting_device_Id;
-    private long predicting_start_time;
+    private long predicting_complete_time;
     public Semaphore allocate_semaphore = new Semaphore(0);
     public CountDownLatch wait_pre;
 
@@ -64,7 +64,7 @@ class Task {
         this.mobileDeviceId = mobileDeviceId;
         this.is_complete = false;
         this.predicting_device_Id = new ArrayList<>();
-        this.predicting_start_time = 0;
+        this.predicting_complete_time = 0;
     }
 
     // 添加前驱任务并记录边的大小
@@ -183,10 +183,10 @@ class Task {
     public void setIsComplete(boolean is_complete) { this.is_complete = is_complete; }
 
     public List<Integer> getPredicting_device_Id() { return predicting_device_Id; }
-    public void setPredicting_device_Id(int id) { this.predicting_device_Id.add(id); }
+    public void setPredicting_device_Id(List<Integer> ids) { this.predicting_device_Id.addAll(ids); }
 
-    public void setPredicting_start_time(long time) { this.predicting_start_time = time; }
-    public long getPredicting_start_time() { return predicting_start_time; }
+    public void setPredicting_complete_time(long time) { this.predicting_complete_time = time; }
+    public long getPredicting_complete_time() { return predicting_complete_time; }
 
 
 @Override

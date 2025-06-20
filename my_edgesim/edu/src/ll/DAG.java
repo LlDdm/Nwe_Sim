@@ -1,12 +1,22 @@
 package ll;
 
+import org.apache.commons.math3.geometry.spherical.twod.Edge;
+import org.apache.poi.ss.formula.functions.T;
+
 import java.util.*;
 
 public class DAG {
     private List<Task> tasks;
+    private HashSet<Task> criticalTasks;
+    private int depth;
+    private int maxWidth;
+    List<Task> tpoSort;
+    private HashMap<Integer, Task> TasksMap;
 
     DAG() {
         this.tasks = new ArrayList<>();
+        this.criticalTasks = new HashSet<>();
+        this.TasksMap = new HashMap<>();
     }
 
     void addTask(Task task) {
@@ -18,50 +28,102 @@ public class DAG {
     }
 
     public Task getTask(int id) {
-        for (Task task : tasks) {
-            if (task.get_taskId() == id) {
-                return task;
-            }
-        }
-        // 如果没有找到匹配的Task, 返回null或者抛出异常
-        return null; // 或者 throw new NoSuchElementException("No Task with such ID found");
+
+        return TasksMap.get(id);
     }
 
-    public List<Task> topologicalSort() {
-        List<Task> sortedTasks = new ArrayList<>();
-        HashMap<Integer, Integer> outDegree = new HashMap<>();
-        Queue<Task> queue = new LinkedList<>();
+    public void setDepth(int depth) {
+        this.depth = depth;
+    }
+    public int getDepth() { return depth; }
+
+    public void setMaxWidth(int maxWidth) { this.maxWidth = maxWidth; }
+    public int getMaxWidth() { return maxWidth; }
+
+    public HashSet<Task> getCriticalTasks() { return criticalTasks; }
+
+    public List<Task> getTpoSort() { return tpoSort; }
+
+    public HashMap<Integer, Task> getTasksMap() { return TasksMap; }
+
+    public void setTasksMap() {
+        for(Task task : tasks) {
+            TasksMap.put(task.get_taskId(), task);
+        }
+    }
+
+    public void computeCriticalPath() {
+        Map<Task, Long> earliestStart = new HashMap<>();
+        Map<Task, Long> latestStart = new HashMap<>();
+        List<Task> tpoSort = new ArrayList<>();
+        Queue<Task> taskQueue = new LinkedList<>();
+        Map<Task, Integer> inDegree = new HashMap<>();
+
+        // 拓扑排序
         for (Task task : tasks) {
-            outDegree.put(task.get_taskId(), task.getSuccessors() .size());
-            if(task.getSuccessors().isEmpty()){
-                queue.offer(task);
-                task.setR(0);
+            if (task.getPredecessors().isEmpty()) {
+                taskQueue.add(task);
+                inDegree.put(task, 0);
+            } else {
+                inDegree.put(task, task.getPredecessors().size());
             }
         }
 
-        while(!queue.isEmpty()){
-            Task task = queue.poll();
-            sortedTasks.add(task);
-            for(Task pre : task.getPredecessors()) {
-                if (pre != null) {
-                    queue.offer(pre);
-                    long recent_max = 0;
-                    for (Task suc : pre.getSuccessors()) {
-                        long tra = pre.getSuccessorsMap().get(suc);
-                        if (tra + suc.getR() > recent_max)
-                            recent_max = tra + suc.getR();
+        while (!taskQueue.isEmpty()) {
+            Task task = taskQueue.poll();
+            tpoSort.add(task);  // 保证任务按拓扑顺序处理
+            for (Task suc : task.getSuccessors()) {
+                if(suc != null) {
+                    int in = inDegree.get(suc);
+                    inDegree.replace(suc, in - 1);
+                    if (inDegree.get(suc) == 0) {
+                        taskQueue.add(suc);
                     }
-                    pre.setR(recent_max + pre.getSize());
                 }
             }
+
         }
 
-        sortedTasks.sort(Comparator.comparingLong(Task::getR));
-        Collections.reverse(sortedTasks);
-
-        if (sortedTasks.size() != tasks.size()) {
-            throw new IllegalArgumentException("The graph has at least one cycle, cannot perform topological sort.");
+        // Step 1: 计算每个任务的最早开始时间
+        for (Task task : tpoSort) {
+            if (task.getPredecessors().isEmpty()) {
+                earliestStart.put(task, 0L);
+            } else {
+                long MAX_start = Long.MIN_VALUE;
+                for (Task pre : task.getPredecessors()) {
+                    if (earliestStart.get(pre) + pre.getSize() + task.getPredecessorsMap().get(pre) > MAX_start) {
+                        MAX_start = earliestStart.get(pre) + pre.getSize() + task.getPredecessorsMap().get(pre);
+                    }
+                }
+                earliestStart.put(task, MAX_start);
+            }
         }
-        return sortedTasks;
+
+        this.tpoSort = tpoSort;
+        List<Task> revisedTasks = new ArrayList<>(tpoSort);
+        Collections.reverse(revisedTasks);
+
+        // Step 2: 计算每个任务的最迟开始时间
+        for (Task task : revisedTasks) {
+            if (task.getSuccessors().isEmpty()) {
+                latestStart.put(task, earliestStart.get(task));
+            } else {
+                long Min_Start = Long.MAX_VALUE;
+                for (Task suc : task.getSuccessors()) {
+                    if (latestStart.get(suc) - task.getSuccessorsMap().get(suc) - task.getSize() < Min_Start) {
+                        Min_Start = latestStart.get(suc) - task.getSuccessorsMap().get(suc) - task.getSize();
+                    }
+                }
+                latestStart.put(task, Min_Start);
+            }
+        }
+
+        // Step 3: 确定关键任务
+        for (Task task : tasks) {
+            if (earliestStart.get(task) != null && latestStart.get(task) != null &&
+                    Objects.equals(earliestStart.get(task), latestStart.get(task))) {
+                criticalTasks.add(task);
+            }
+        }
     }
 }

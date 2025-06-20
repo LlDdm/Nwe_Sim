@@ -1,50 +1,42 @@
 package ll;
 
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 class EdgeDevice{
     private int deviceId;
-    private double mips;   // 处理能力
-    private double storage;         // 带宽
+    private long mips;   // 处理能力
     private final double[] location = new double[2];          // 纬度     // 经度
-    private double wlan_id;
-    private double attractiveness;
-    private Queue<Task> taskQueue;    // 任务队列
-    private boolean isProcessing;     // 标志位，判断是否在处理任务
-    private List<Task> receivedInputList;
-    private Queue<Map<Task,Task>> sentOutputQueue;
-    private String status;  // 空闲/执行中
-    private long taskQueueLength;
-    private double downloadspeed;
-    private double uploadspeed;
+    private int attractiveness;
+    private BlockingQueue<Task> taskQueue;    // 任务队列
+    private AtomicLong taskQueueLength;
+    private long downloadspeed;
+    private long uploadspeed;
+    private long Idle;
+    private long QueueTask_EstimateMaxComplete;
+    private HashSet<Task> taskSets;
+    Scheduler scheduler;
+    private final ReentrantLock lock;
 
-    public EdgeDevice(int deviceId, double mips, double storage, double latitude, double longitude, double wlan_id,
-                      double attractiveness, double downloadspeed, double uploadspeed) {
+
+    public EdgeDevice(int deviceId, long mips, double latitude, double longitude,
+                      int attractiveness, long downloadspeed, long uploadspeed, long Idle) {
         this.deviceId = deviceId;
         this.mips = mips;
-        this.storage = storage;
         this.location[0] = latitude;
         this.location[1] = longitude;
-        this.wlan_id = wlan_id;
         this.attractiveness = attractiveness;
-        this.taskQueue = new LinkedList<>();
-        this.isProcessing = false;
-        this.receivedInputList = new ArrayList<>();
-        this.sentOutputQueue = new LinkedList<>();
-        this.status = "IDLE";  // 初始状态为空闲
-        this.taskQueueLength = 0;
+        this.taskQueue = new LinkedBlockingQueue<>();
+        this.taskQueueLength = new AtomicLong(0);
         this.downloadspeed = downloadspeed;
         this.uploadspeed = uploadspeed;
-    }
-
-    // 获取设备当前状态
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
+        this.Idle = Idle;
+        this.QueueTask_EstimateMaxComplete = 0;
+        this.taskSets = new HashSet<>();
+        this.lock = new ReentrantLock();
     }
 
     public int getDeviceId() {
@@ -55,138 +47,157 @@ class EdgeDevice{
         return mips;
     }
 
-    public double getStorage() {
-        return storage;
+    public void addTask(Task task) {
+        try {
+            taskQueue.put(task);
+            taskQueueLength.addAndGet(task.getSize());
+        }catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
-    public boolean isProcessing() {
-        return isProcessing;
-    }
-
-    public synchronized void addTask(Task task) {
-        taskQueue.add(task);
-        this.taskQueueLength += task.getSize();
-    }
-
-    public synchronized void receiveInput(Task task) {
-        receivedInputList.add(task);
-    }
-
-    public void sentOutput(Map<Task,Task> outputMap) {
-        sentOutputQueue.add(outputMap);
-    }
-
-    public void setAttractiveness(double attractiveness) {
+    public void setAttractiveness(int attractiveness) {
         this.attractiveness = attractiveness;
     }
-    public double getAttractiveness() {
+    public int getAttractiveness() {
         return attractiveness;
-    }
-
-    public double getWlan_id() {
-        return wlan_id;
     }
 
     public double[] getlocation() {
         return location;
     }
 
-    public Queue<Task> getTaskQueue() {
-        return taskQueue;
-    }
-    public boolean getIsProcessing() {
-        return isProcessing;
-    }
+    public BlockingQueue<Task> getTaskQueue() {return taskQueue;}
 
-    public double getDownloadspeed() {
+    public long getDownloadspeed() {
         return downloadspeed;
     }
-    public double getUploadspeed() {
+    public long getUploadspeed() {
         return uploadspeed;
+    }
+
+    public long getIdle() { return Idle; }
+
+    public long getTaskQueueLength() { return taskQueueLength.get(); }
+    public AtomicLong getTaskQueueLengthAtomic() { return taskQueueLength; }
+
+    public long getQueueTask_EstimateMaxComplete() { return QueueTask_EstimateMaxComplete; }
+
+    public HashSet<Task> getTaskSets() {return taskSets;}
+    public void addTaskSets(Task task) {
+        lock.lock();
+        try {
+            this.taskSets.add(task);
+            if (task.getEstimate_complete_time() > QueueTask_EstimateMaxComplete) {
+                QueueTask_EstimateMaxComplete = task.getEstimate_complete_time();
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void setScheduler(Scheduler scheduler) {
+        this.scheduler = scheduler;
     }
 
     // 启动边缘设备，开始监听任务
     public void startDevice() {
         new Thread(() -> {
-            while (true) {
-                listenForTasks();  // 持续监听任务
+            while (SimManager.getInstance().isRunning()) {
+                if(!taskQueue.isEmpty())
+                    listenForTasks();  // 持续监听任务
+                else
+                    Thread.yield();
             }
         }).start();
     }
 
     // 监听并处理任务
-    private synchronized void listenForTasks() {
-        if (!taskQueue.isEmpty()) {
-            Task task = taskQueue.poll();  // 获取队列中的任务
+    public  void listenForTasks() {
+        try {
+            Task task = taskQueue.take();  // 等待队列中任务到来
+
+            long startTime = System.currentTimeMillis();
+            try {
+                // 等待前驱任务到达
+                task.wait_pre.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            long endTime = System.currentTimeMillis();
+            task.setWait_pre_time(endTime - startTime);
+
             startTask(task);  // 开始执行任务
+            Thread.sleep(Idle);
+        }catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
     // 执行任务
-    public synchronized void startTask(Task task) {
-        if (status.equals("IDLE")) {
-            setStatus("EXECUTING");
-            System.out.println("Device " + deviceId + " started task: " + task.get_taskId());
-            try {
-                // 模拟任务执行
-                Thread.sleep((task.getSize()));  // 假设每个任务执行的时间与任务长度成正比
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            this.taskQueueLength--;
-            System.out.println("Device " + deviceId + " completed task: " + task.get_taskId());
-            setStatus("IDLE");
+    public void startTask(Task task) {
+
+        long delay = (long) Math.ceil((double) (task.getSize() * 2) / mips) + getIdle();
+
+        long startTime = System.currentTimeMillis();
+        task.setStarTime(startTime);
+
+        try {
+            // 模拟任务执行
+            Thread.sleep(delay);  // 假设每个任务执行的时间与任务长度成正比
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Task was interrupted,APP: " + task.getAppid() + " task: " + task.get_taskId());
+            return;
         }
+
+        long endTime = System.currentTimeMillis();
+        task.setCompleteTime(endTime);
+        task.setExecutionTime(delay);
+
+        taskQueueLength.addAndGet(-task.getSize());
+        taskSets.remove(task);
+       // System.out.println("Device： " + deviceId + " complete mobile: " + task.getMobileDeviceId() + " APP: " + task.getAppid() + " task: " + task.get_taskId());
+        sentOutputs(task); // 传输输出数据
     }
 
     // 发送任务输出数据到后继任务的设备
-    private void sentOutputs(){
-        new Thread(() -> {
-            while (true) {
-                listenForOutputs();
+    public void sentOutputs(Task task) {
+        List<Task> sucTasks = task.getSuccessors();
+        List<EdgeDevice> edges = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices();
+        if(sucTasks.get(0).get_taskId() == -2){
+            EndTaskThread endTaskThread = new EndTaskThread(task, sucTasks.get(0), this);
+            endTaskThread.start();
+        }else {
+            for (Task sucTask : sucTasks) {
+                if (sucTask.getDevice_Id() != deviceId) {
+                    new Thread(() -> startSent(task, sucTask, edges)).start();
+                } else {
+                    sucTask.wait_pre.countDown();
+                    task.setOutput_traDelay(sucTask, 0);
+                }
             }
-        }).start();
+        }
     }
 
-    private synchronized void listenForOutputs() {
-        if(!sentOutputQueue.isEmpty()) {
-            Map<Task, Task> map = sentOutputQueue.poll();
-            List<Task> Keys = new ArrayList<>(map.keySet());
-            Task currentTask = Keys.get(0);
-            Task toTask = map.get(currentTask);
-            List<EdgeDevice> edges = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices();
-            startSent(currentTask, toTask, edges);
-        }
-    }
-
-    public synchronized void startSent(Task currentTask, Task toTask, List<EdgeDevice> edgeDevices) {
-
-        double stime = (double)System.currentTimeMillis();
-        do{
-            if (toTask.getDevice_Id() == -1) {
-                continue;
+    public void startSent(Task currentTask, Task suctask, List<EdgeDevice> edgeDevices) {
+        if (suctask.getDevice_Id() == -1) {
+            long startTime = System.currentTimeMillis();
+            try {
+                // 等待后继任务分配设备
+                suctask.allocate_semaphore.acquire();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-            break;
-        } while(true);
-        double etime = (double)System.currentTimeMillis();
-        double waitTime = etime - stime;
-        currentTask.setOutput_sentQueue_waitTime(toTask, waitTime);
-
-        double uploadDelay = currentTask.getSuccessorsMap().get(toTask)/uploadspeed;
-        currentTask.setOutput_uploadDelay(toTask, uploadDelay);
-        try {
-            // 模拟上传执行
-            Thread.sleep((long)uploadDelay);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            long etime = System.currentTimeMillis();
+            currentTask.setSucLocated_waitTime(suctask, etime - startTime);
+        }else {
+            currentTask.setSucLocated_waitTime(suctask, 0);
         }
-
-        EdgeDevice sucDevice = edgeDevices.get(toTask.getDevice_Id());
-        SimManager.getInstance().getNetworkModel().transferTask(currentTask, toTask,sucDevice);
-        if(sucDevice.getAttractiveness() != attractiveness) {
-            double man_BW = SimManager.getInstance().getNetworkModel().getMAN_BW();
-            currentTask.setOutput_traDelay(toTask,man_BW);
-        }
+        EdgeDevice edgeDevice = edgeDevices.get(suctask.getDevice_Id());
+        OutputTransferThread outputTransferThread = new OutputTransferThread(currentTask, suctask, edgeDevice, location, edgeDevice.getlocation(),
+                (int) attractiveness, uploadspeed);
+        outputTransferThread.start();
 
     }
 

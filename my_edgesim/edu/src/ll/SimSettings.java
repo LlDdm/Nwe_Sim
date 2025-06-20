@@ -32,69 +32,34 @@ public class SimSettings {
 
     public static final double CLIENT_ACTIVITY_START_TIME = 10;
 
-    //enumarations for the VM types
-    public static enum VM_TYPES { MOBILE_VM, EDGE_VM, CLOUD_VM }
-
-    //enumarations for the VM types
-    public static enum NETWORK_DELAY_TYPES { WLAN_DELAY, MAN_DELAY, WAN_DELAY, GSM_DELAY }
-
-    //predifined IDs for the components.
-    public static final int CLOUD_DATACENTER_ID = 1000;
-    public static final int MOBILE_DATACENTER_ID = 1001;
-    public static final int EDGE_ORCHESTRATOR_ID = 1002;
-    public static final int GENERIC_EDGE_DEVICE_ID = 1003;
-
     //delimiter for output file.
     public static final String DELIMITER = ";";
 
     public int Attractiveness_NUM;
 
-    private double SIMULATION_TIME; //minutes unit in properties file
-    private double WARM_UP_PERIOD; //minutes unit in properties file
-    private double INTERVAL_TO_GET_VM_LOAD_LOG; //minutes unit in properties file
-    private double INTERVAL_TO_GET_LOCATION_LOG; //minutes unit in properties file
-    private double INTERVAL_TO_GET_AP_DELAY_LOG; //minutes unit in properties file
-    private boolean FILE_LOG_ENABLED; //boolean to check file logging option
-    private boolean DEEP_FILE_LOG_ENABLED; //boolean to check deep file logging option
+    private long SIMULATION_TIME; //minutes unit in properties file
+    private long LOAD_GENERATE_TIME;
+    private long WARM_UP_PERIOD; //minutes unit in properties file
 
     private int MIN_NUM_OF_MOBILE_DEVICES;
     private int MAX_NUM_OF_MOBILE_DEVICES;
     private int MOBILE_DEVICE_COUNTER_SIZE;
-    private int WLAN_RANGE;
 
-    private int NUM_OF_EDGE_DEVICES;
-    private int NUM_OF_PLACE_TYPES;
-
-    private double WAN_PROPAGATION_DELAY; //seconds unit in properties file，广域网传输延迟
-    private double GSM_PROPAGATION_DELAY; //seconds unit in properties file,移动网络传输延迟
-    private double LAN_INTERNAL_DELAY; //seconds unit in properties file
     private double BANDWITH_WLAN; //Mbps unit in properties file
     private double BANDWITH_MAN; //Mbps unit in properties file
     private double BANDWITH_WAN; //Mbps unit in properties file
     private double BANDWITH_GSM; //Mbps unit in properties file
     private double BANDWITH_LAN;
 
-    private int NUM_OF_HOST_ON_CLOUD_DATACENTER;
-    private int NUM_OF_VM_ON_CLOUD_HOST;
-    private int CORE_FOR_CLOUD_VM;
-    private int MIPS_FOR_CLOUD_VM; //MIPS
-    private int RAM_FOR_CLOUD_VM; //MB
-    private int STORAGE_FOR_CLOUD_VM; //Byte
-
-    //移动设备参数，假设移动设备不具备处理能力，不用管
-    private int CORE_FOR_VM;
-    private int MIPS_FOR_VM; //MIPS
-    private int RAM_FOR_VM; //MB
-    private int STORAGE_FOR_VM; //Byte
-
     private String[] SIMULATION_SCENARIOS;
     private String[] ORCHESTRATOR_POLICIES;
+    private String[] USE_SCENARIOS;
 
     private double[][] appLookUpTable = null;
     private String[] appNames = null;
 
-    private double[][] edgedeviceLookUpTable = null;
-    private String[] edgedeviceNames = null;
+    private double[][] edgeDeviceLookUpTable = null;
+    private String[] edgeDeviceNames = null;
 
     private double[][] connectionTypeLookUpTable =new double[3][1];
 
@@ -120,34 +85,25 @@ public class SimSettings {
             Properties prop = new Properties();
             prop.load(input);
 
-            SIMULATION_TIME = (double)60 * Double.parseDouble(prop.getProperty("simulation_time")); //seconds
-            WARM_UP_PERIOD = (double)60 * Double.parseDouble(prop.getProperty("warm_up_period")); //seconds
-            INTERVAL_TO_GET_VM_LOAD_LOG = (double)60 * Double.parseDouble(prop.getProperty("vm_load_check_interval")); //seconds
-            INTERVAL_TO_GET_AP_DELAY_LOG = (double)60 * Double.parseDouble(prop.getProperty("ap_delay_check_interval", "0")); //seconds
+            SIMULATION_TIME = 60 * Long.parseLong(prop.getProperty("simulation_time")); //seconds
+            LOAD_GENERATE_TIME = 60 * Long.parseLong(prop.getProperty("load_generate_time"));
+            WARM_UP_PERIOD =  Long.parseLong(prop.getProperty("warm_up_period")); //seconds
 
             MIN_NUM_OF_MOBILE_DEVICES = Integer.parseInt(prop.getProperty("min_number_of_mobile_devices"));
             MAX_NUM_OF_MOBILE_DEVICES = Integer.parseInt(prop.getProperty("max_number_of_mobile_devices"));
             MOBILE_DEVICE_COUNTER_SIZE = Integer.parseInt(prop.getProperty("mobile_device_counter_size"));
 
-            WAN_PROPAGATION_DELAY = Double.parseDouble(prop.getProperty("wan_propagation_delay", "0"));
-            GSM_PROPAGATION_DELAY = Double.parseDouble(prop.getProperty("gsm_propagation_delay", "0"));
-            LAN_INTERNAL_DELAY = Double.parseDouble(prop.getProperty("lan_internal_delay", "0"));
-            BANDWITH_WLAN = 1000 * Double.parseDouble(prop.getProperty("wlan_bandwidth"));
-            BANDWITH_MAN = 1000 * Double.parseDouble(prop.getProperty("man_bandwidth", "0"));
-            BANDWITH_WAN = 1000 * Double.parseDouble(prop.getProperty("wan_bandwidth", "0"));
-            BANDWITH_GSM =  1000 * Double.parseDouble(prop.getProperty("gsm_bandwidth", "0"));
-            BANDWITH_LAN = 1000 * Double.parseDouble(prop.getProperty("lan_bandwidth", "0"));
-
-            NUM_OF_HOST_ON_CLOUD_DATACENTER = Integer.parseInt(prop.getProperty("number_of_host_on_cloud_datacenter"));
-            NUM_OF_VM_ON_CLOUD_HOST = Integer.parseInt(prop.getProperty("number_of_vm_on_cloud_host"));
-            CORE_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("core_for_cloud_vm"));
-            MIPS_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("mips_for_cloud_vm"));
-            RAM_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("ram_for_cloud_vm"));
-            STORAGE_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("storage_for_cloud_vm"));
+            BANDWITH_WLAN =  Double.parseDouble(prop.getProperty("wlan_bandwidth"));
+            BANDWITH_MAN =  Double.parseDouble(prop.getProperty("man_bandwidth", "0"));
+            BANDWITH_WAN =  Double.parseDouble(prop.getProperty("wan_bandwidth", "0"));
+            BANDWITH_GSM =   Double.parseDouble(prop.getProperty("gsm_bandwidth", "0"));
+            BANDWITH_LAN =  Double.parseDouble(prop.getProperty("lan_bandwidth", "0"));
 
             ORCHESTRATOR_POLICIES = prop.getProperty("orchestrator_policies").split(",");
 
             SIMULATION_SCENARIOS = prop.getProperty("simulation_scenarios").split(",");
+
+            USE_SCENARIOS = prop.getProperty("Use_scenarios").split(",");
 
             connectionTypeLookUpTable[0][0] = Double.parseDouble(prop.getProperty("lanType_percentage", "0"));
             connectionTypeLookUpTable[1][0] = Double.parseDouble(prop.getProperty("wlanType_percentage", "0"));
@@ -180,7 +136,7 @@ public class SimSettings {
     /**
      * returns simulation time (in seconds unit) from properties file
      */
-    public double getSimulationTime()
+    public long getSimulationTime()
     {
         return SIMULATION_TIME;
     }
@@ -193,69 +149,7 @@ public class SimSettings {
         return WARM_UP_PERIOD;
     }
 
-    /**
-     * returns VM utilization log collection interval (in seconds unit) from properties file
-     */
-    public double getVmLoadLogInterval()
-    {
-        return INTERVAL_TO_GET_VM_LOAD_LOG;
-    }
-
-    /**
-     * returns VM location log collection interval (in seconds unit) from properties file
-     */
-    public double getLocationLogInterval()
-    {
-        return INTERVAL_TO_GET_LOCATION_LOG;
-    }
-
-    /**
-     * returns VM location log collection interval (in seconds unit) from properties file
-     */
-    public double getApDelayLogInterval()
-    {
-        return INTERVAL_TO_GET_AP_DELAY_LOG;
-    }
-
-    /**
-     * returns deep statistics logging status from properties file
-     */
-    public boolean getDeepFileLoggingEnabled()
-    {
-        return FILE_LOG_ENABLED && DEEP_FILE_LOG_ENABLED;
-    }
-
-    /**
-     * returns deep statistics logging status from properties file
-     */
-    public boolean getFileLoggingEnabled()
-    {
-        return FILE_LOG_ENABLED;
-    }
-
-    /**
-     * returns WAN propagation delay (in second unit) from properties file
-     */
-    public double getWanPropagationDelay()
-    {
-        return WAN_PROPAGATION_DELAY;
-    }
-
-    /**
-     * returns GSM propagation delay (in second unit) from properties file
-     */
-    public double getGsmPropagationDelay()
-    {
-        return GSM_PROPAGATION_DELAY;
-    }
-
-    /**
-     * returns internal LAN propagation delay (in second unit) from properties file
-     */
-    public double getInternalLanDelay()
-    {
-        return LAN_INTERNAL_DELAY;
-    }
+    public long getLOAD_GENERATE_TIME(){ return LOAD_GENERATE_TIME; }
 
     /**
      * returns WLAN bandwidth (in Mbps unit) from properties file
@@ -309,6 +203,7 @@ public class SimSettings {
         return MAX_NUM_OF_MOBILE_DEVICES;
     }
 
+
     /**
      * returns the number of increase on mobile devices
      * while iterating from min to max mobile device
@@ -319,123 +214,15 @@ public class SimSettings {
     }
 
     /**
-     * returns edge device range in meter
-     */
-    public int getWlanRange()
-    {
-        return WLAN_RANGE;
-    }
-
-    /**
-     * returns the number of edge datacenters
-     */
-    public int getNumOfEdgeDatacenters()
-    {
-        return NUM_OF_EDGE_DEVICES;
-    }
-
-    /**
-     * returns the number of different place types
-     */
-    public int getNumOfPlaceTypes()
-    {
-        return NUM_OF_PLACE_TYPES;
-    }
-
-    /**
-     * returns the number of cloud datacenters
-     */
-    public int getNumOfCloudHost()
-    {
-        return NUM_OF_HOST_ON_CLOUD_DATACENTER;
-    }
-
-    /**
-     * returns the number of cloud VMs per Host
-     */
-    public int getNumOfCloudVMsPerHost()
-    {
-        return NUM_OF_VM_ON_CLOUD_HOST;
-    }
-
-    /**
-     * returns the total number of cloud VMs
-     */
-    public int getNumOfCloudVMs()
-    {
-        return NUM_OF_VM_ON_CLOUD_HOST * NUM_OF_HOST_ON_CLOUD_DATACENTER;
-    }
-
-    /**
-     * returns the number of cores for cloud VMs
-     */
-    public int getCoreForCloudVM()
-    {
-        return CORE_FOR_CLOUD_VM;
-    }
-
-    /**
-     * returns MIPS of the central cloud VMs
-     */
-    public int getMipsForCloudVM()
-    {
-        return MIPS_FOR_CLOUD_VM;
-    }
-
-    /**
-     * returns RAM of the central cloud VMs
-     */
-    public int getRamForCloudVM()
-    {
-        return RAM_FOR_CLOUD_VM;
-    }
-
-    /**
-     * returns Storage of the central cloud VMs
-     */
-    public int getStorageForCloudVM()
-    {
-        return STORAGE_FOR_CLOUD_VM;
-    }
-
-    /**
-     * returns RAM of the mobile (processing unit) VMs
-     */
-    public int getRamForMobileVM()
-    {
-        return RAM_FOR_VM;
-    }
-
-    /**
-     * returns the number of cores for mobile VMs
-     */
-    public int getCoreForMobileVM()
-    {
-        return CORE_FOR_VM;
-    }
-
-    /**
-     * returns MIPS of the mobile (processing unit) VMs
-     */
-    public int getMipsForMobileVM()
-    {
-        return MIPS_FOR_VM;
-    }
-
-    /**
-     * returns Storage of the mobile (processing unit) VMs
-     */
-    public int getStorageForMobileVM()
-    {
-        return STORAGE_FOR_VM;
-    }
-
-    /**
      * returns simulation screnarios as string
      */
     public String[] getSimulationScenarios()
     {
         return SIMULATION_SCENARIOS;
+    }
+
+    public String[] getUseScenarios(){
+        return USE_SCENARIOS;
     }
 
     /**
@@ -475,11 +262,11 @@ public class SimSettings {
 
     public double[][] getEdgedeviceLookUpTable()
     {
-        return edgedeviceLookUpTable;
+        return edgeDeviceLookUpTable;
     }
     public String getEdgedeviceName(int device_id)
     {
-        return edgedeviceNames[device_id];
+        return edgeDeviceNames[device_id];
     }
 
     private void isAttributePresent(Element element, String key) {
@@ -574,36 +361,38 @@ public class SimSettings {
             doc.getDocumentElement().normalize();
 
             String[] mandatoryAttributes = {
+                    "id",
                     "mips",
-                    "storage",
+                    "idle",
                     "latitude",
                     "longitude",
-                    "wlan_id",
                     "attractiveness",
+                    "downloadspeed",
+                    "uploadspeed"
             };
 
             NodeList deviceList = doc.getElementsByTagName("device");
-            edgedeviceLookUpTable = new double[deviceList.getLength()]
+            edgeDeviceLookUpTable = new double[deviceList.getLength()]
                     [mandatoryAttributes.length];
 
             Set<Double> attractivenessType = new HashSet<>();
 
-            edgedeviceNames = new String[deviceList.getLength()];
+            edgeDeviceNames = new String[deviceList.getLength()];
             for (int i = 0; i < deviceList.getLength(); i++) {
                 Node deviceNode = deviceList.item(i);
 
                 Element deviceElement = (Element) deviceNode;
-                isAttributePresent(deviceElement, "id");
-                String deviceName = deviceElement.getAttribute("id");
-                edgedeviceNames[i] = deviceName;
+                isAttributePresent(deviceElement, "name");
+                String deviceName = deviceElement.getAttribute("name");
+                edgeDeviceNames[i] = deviceName;
 
                 for (int m = 0; m < mandatoryAttributes.length; m++) {
                     isElementPresent(deviceElement, mandatoryAttributes[m]);
-                    edgedeviceLookUpTable[i][m] = Double.parseDouble(deviceElement.
+                    edgeDeviceLookUpTable[i][m] = Double.parseDouble(deviceElement.
                             getElementsByTagName(mandatoryAttributes[m]).item(0).getTextContent());
                 }
-                if(!attractivenessType.contains(edgedeviceLookUpTable[i][5])){
-                    attractivenessType.add(edgedeviceLookUpTable[i][5]);
+                if(!attractivenessType.contains(edgeDeviceLookUpTable[i][5])){
+                    attractivenessType.add(edgeDeviceLookUpTable[i][5]);
                     Attractiveness_NUM++;
                 }
             }

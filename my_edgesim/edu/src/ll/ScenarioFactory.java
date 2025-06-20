@@ -21,18 +21,16 @@ public interface ScenarioFactory {
     public LoadGeneratorModel getLoadGeneratorModel();
 
     public EdgeDeviceGeneratorModel getDeviceGeneratorModel();
-    /**
-     * provides abstract Edge Orchestrator
-     */
-    public Scheduler getScheduler();
 
     /**
      * provides abstract Network Model
      */
     public NetWork getNetworkModel();
 
-    public ResourceMonitor getResourceMonitor();
+//    public ResourceMonitor getResourceMonitor();
 
     public NativeEdgeDeviceGenerator getNativeEdgeDeviceGenerator();
+
+    public void setLScenarioFactory(int numOfMobileDevice, String orchestratorPolicy, String simScenario, String useScenario);
 
 }

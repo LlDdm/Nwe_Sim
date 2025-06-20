@@ -12,8 +12,13 @@
 
 package ll;
 
+import jdk.jshell.spi.SPIResolutionException;
+
 import java.io.IOException;
+import java.sql.Time;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 
 public class SimManager{
@@ -21,52 +26,21 @@ public class SimManager{
     private String orchestratorPolicy;
     private int numOfMobileDevice;
     private ScenarioFactory scenarioFactory;
+    private String useScenario;
+    public List<Long> result;
+    public CountDownLatch wait_complete;
+    private volatile boolean running;
 
     private NetWork networkModel;
     private EdgeDeviceGeneratorModel edgeDeviceGeneratorModel;
-    private Scheduler scheduler;
     private LoadGeneratorModel loadGeneratorModel;
-    private ResourceMonitor resourceMonitor;
     private NativeEdgeDeviceGenerator nativeEdgeDeviceGenerator;
 
     private static SimManager instance = null;
 
-    public SimManager(ScenarioFactory _scenarioFactory, int _numOfMobileDevice, String _simScenario, String _orchestratorPolicy) throws Exception {
-        simScenario = _simScenario;
+    public SimManager(ScenarioFactory _scenarioFactory) {
         scenarioFactory = _scenarioFactory;
-        numOfMobileDevice = _numOfMobileDevice;
-        orchestratorPolicy = _orchestratorPolicy;
-
-        System.out.println("Creating Loads...");
-        loadGeneratorModel = scenarioFactory.getLoadGeneratorModel();
-        loadGeneratorModel.initializeModel();
-        System.out.println("Done.");
-
-        System.out.println("Creating Devices...");
-        edgeDeviceGeneratorModel = scenarioFactory.getDeviceGeneratorModel();
-        edgeDeviceGeneratorModel.initialize();
-        System.out.println("Done.");
-
-        System.out.println("Creating NativeEdgeDevices...");
-        nativeEdgeDeviceGenerator = scenarioFactory.getNativeEdgeDeviceGenerator();
-        nativeEdgeDeviceGenerator.initialize();
-        System.out.println("Done.");
-
-        //Generate network model
-        System.out.println("Creating Networks...");
-        networkModel = scenarioFactory.getNetworkModel();
-        networkModel.initialize();
-        System.out.println("Done.");
-
-        //Generate edge orchestrator
-        System.out.println("Creating Schedulers...");
-        scheduler = scenarioFactory.getScheduler();
-        scheduler.initialize();
-        System.out.println("Done.");
-
-        resourceMonitor = scenarioFactory.getResourceMonitor();
-        resourceMonitor.initialize();
-
+        result = new ArrayList<Long>();
         instance = this;
     }
 
@@ -74,12 +48,64 @@ public class SimManager{
         return instance;
     }
 
+    public void setEdgeDeviceGeneratorModel() {
+        System.out.println("Creating Devices...");
+        edgeDeviceGeneratorModel = scenarioFactory.getDeviceGeneratorModel();
+        edgeDeviceGeneratorModel.initialize();
+        System.out.println("Done.");
+        instance = this;
+    }
+
+    public void setNativeEdgeDeviceGenerator() {
+        System.out.println("Creating NativeEdgeDevices...");
+        nativeEdgeDeviceGenerator = scenarioFactory.getNativeEdgeDeviceGenerator();
+        nativeEdgeDeviceGenerator.initialize();
+        System.out.println("Done.");
+        instance = this;
+    }
+
+    public void setLoadGeneratorModel() {
+        System.out.println("Creating Loads...");
+        loadGeneratorModel = scenarioFactory.getLoadGeneratorModel();
+        loadGeneratorModel.initializeModel();
+        System.out.println("Done.");
+        instance = this;
+    }
+
+    public void setNetworkModel() {
+        //Generate network model
+        System.out.println("Creating Networks...");
+        networkModel = scenarioFactory.getNetworkModel();
+        networkModel.initialize();
+        System.out.println("Done.");
+        instance = this;
+    }
+
     /**
      * Triggering CloudSim to start simulation
      */
-    public void startSimulation() throws Exception{
+
+
+    public void startSimulation(){
         //Starts the simulation
-        System.out.println("is starting...");
+
+        System.out.println("start devices...");
+        for(int i=0; i<edgeDeviceGeneratorModel.getEdge_devices().size(); i++){
+            edgeDeviceGeneratorModel.getEdge_devices().get(i).startDevice();
+        }
+        System.out.println("device start done.");
+
+        System.out.println("start scheduler...");
+        for(int i=0 ;i < nativeEdgeDeviceGenerator.getNativeDevicesMap().size();i++){
+            nativeEdgeDeviceGenerator.getNativeDevicesMap().get(i).scheduler.startDevice(orchestratorPolicy, simScenario);
+        }
+        System.out.println("schedule start done.");
+
+        System.out.println("start mobile devices...");
+        for(int i=0 ;i < numOfMobileDevice;i++){
+            loadGeneratorModel.getMobileDevices().get(i).startDevice();
+        }
+        System.out.println("mobile device start done.");
 
     }
 
@@ -87,31 +113,30 @@ public class SimManager{
         return simScenario;
     }
 
-    public String getOrchestratorPolicy(){
-        return orchestratorPolicy;
+    public String getOrchestratorPolicy(){return orchestratorPolicy;}
+
+    public ScenarioFactory getScenarioFactory(){return scenarioFactory;}
+
+    public int getNumOfMobileDevice(){return numOfMobileDevice;}
+
+    public String getUseScenario(){return useScenario;}
+
+    public void setManager_condition(String orchestratorPolicy, String simScenario, String useScenario, int numOfMobileDevice){
+        this.orchestratorPolicy = orchestratorPolicy;
+        this.simScenario = simScenario;
+        this.useScenario = useScenario;
+        this.numOfMobileDevice = numOfMobileDevice;
     }
 
-    public ScenarioFactory getScenarioFactory(){
-        return scenarioFactory;
-    }
 
-    public int getNumOfMobileDevice(){
-        return numOfMobileDevice;
-    }
 
     public NetWork getNetworkModel(){
         return networkModel;
     }
 
-    public Scheduler getEdgeOrchestrator(){
-        return scheduler;
-    }
-
     public LoadGeneratorModel getLoadGeneratorModel(){
         return loadGeneratorModel;
     }
-
-    public ResourceMonitor getResourceMonitor(){ return resourceMonitor; }
 
     public EdgeDeviceGeneratorModel getEdgeDeviceGeneratorModel(){
         return edgeDeviceGeneratorModel;
@@ -119,7 +144,16 @@ public class SimManager{
 
     public NativeEdgeDeviceGenerator getNativeEdgeDeviceGenerator(){ return nativeEdgeDeviceGenerator; }
 
+    // 停止线程的公共方法
+    public void stopRunning() {
+        running = false;
+    }
 
+    public void Running(){
+        running = true;
+    }
+
+    public boolean isRunning() { return running; }
 
 }
 

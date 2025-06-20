@@ -11,11 +11,17 @@ public class EdgeDeviceGeneratorModel {
     }
 
     public void initialize(){
-        double [][] Edgedeviceslookuptable = SimSettings.getInstance().getEdgedeviceLookUpTable();
-        for(int i=0; i < Edgedeviceslookuptable.length; i++){
-            edge_devices.add(new EdgeDevice(SimSettings.getInstance().getEdgedeviceName(i),
-                    Edgedeviceslookuptable[i][0], Edgedeviceslookuptable[i][1],Edgedeviceslookuptable[i][2],
-                    Edgedeviceslookuptable[i][3], Edgedeviceslookuptable[i][4], Edgedeviceslookuptable[i][5]));
+        double [][] EdgeDevicesLookUpTable = SimSettings.getInstance().getEdgedeviceLookUpTable();
+        for(int i=0; i < EdgeDevicesLookUpTable.length; i++){
+            if(i == 0)
+                edge_devices.add(new Cloud((int)EdgeDevicesLookUpTable[i][0], (long) EdgeDevicesLookUpTable[i][1], EdgeDevicesLookUpTable[i][3],
+                        EdgeDevicesLookUpTable[i][4], (long) EdgeDevicesLookUpTable[i][6], (long) EdgeDevicesLookUpTable[i][7], (long) EdgeDevicesLookUpTable[i][2],
+                        (int) EdgeDevicesLookUpTable[i][5]));
+            else{
+                edge_devices.add(new EdgeDevice((int)EdgeDevicesLookUpTable[i][0], (long) EdgeDevicesLookUpTable[i][1], EdgeDevicesLookUpTable[i][3],
+                        EdgeDevicesLookUpTable[i][4], (int) EdgeDevicesLookUpTable[i][5], (long) EdgeDevicesLookUpTable[i][6], (long) EdgeDevicesLookUpTable[i][7],
+                        (int) EdgeDevicesLookUpTable[i][2]));
+            }
         }
     }
 

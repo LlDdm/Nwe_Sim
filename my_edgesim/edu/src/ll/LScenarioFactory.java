@@ -12,25 +12,22 @@ package ll;
 
 public class LScenarioFactory implements ScenarioFactory {
     private int numOfMobileDevice;
-    private double simulationTime;
+    private long loadGenerate_time;
+    private long WARM_UP_PERIOD;
     private String orchestratorPolicy;
     private String simScenario;
-    private int Attractiveness_NUM;
+    private String useScenario;
 
-    LScenarioFactory(int _numOfMobileDevice,
-                     double _simulationTime,
-                     String _orchestratorPolicy,
-                     String _simScenario,
-                     int Attractiveness_NUM){
-        orchestratorPolicy = _orchestratorPolicy;
-        numOfMobileDevice = _numOfMobileDevice;
-        simulationTime = _simulationTime;
-        simScenario = _simScenario;
+    LScenarioFactory(
+                     long _loadGenerate_time,
+                     long _WARM_UP_PERIOD) {
+        loadGenerate_time = _loadGenerate_time;
+        WARM_UP_PERIOD = _WARM_UP_PERIOD;
     }
 
     @Override
     public LoadGeneratorModel getLoadGeneratorModel() {
-        return new LoadGeneratorModel(numOfMobileDevice, simulationTime, simScenario);
+        return new LoadGeneratorModel(numOfMobileDevice, simScenario,useScenario,loadGenerate_time, WARM_UP_PERIOD);
     }
 
     @Override
@@ -39,23 +36,26 @@ public class LScenarioFactory implements ScenarioFactory {
     }
 
     @Override
-    public Scheduler getScheduler() {
-        return new Scheduler(orchestratorPolicy, simScenario);
-    }
-
-    @Override
     public NetWork getNetworkModel() {
-        return new NetWork(numOfMobileDevice, Attractiveness_NUM);
+        return new NetWork();
     }
 
-    @Override
-    public ResourceMonitor getResourceMonitor() {
-        return new ResourceMonitor();
-    }
+//    @Override
+//    public ResourceMonitor getResourceMonitor() {
+//        return new ResourceMonitor(simScenario);
+//    }
 
     @Override
     public NativeEdgeDeviceGenerator getNativeEdgeDeviceGenerator() {
         return new NativeEdgeDeviceGenerator();
+    }
+
+    @Override
+    public void setLScenarioFactory(int numOfMobileDevice, String orchestratorPolicy, String simScenario, String useScenario) {
+        this.numOfMobileDevice = numOfMobileDevice;
+        this.orchestratorPolicy = orchestratorPolicy;
+        this.simScenario = simScenario;
+        this.useScenario = useScenario;
     }
 }
 

@@ -1,19 +1,22 @@
 package ll;
 
-public class APP {
+public class APP implements Comparable<APP> {
     private int Appid;
     private String AppName;
-    private double startTime, deadline;
+    private long startTime, deadline;
     private long inputsize;
     private long outputsize;
     private long lenth;
     private DAG dag;
     private double CCR;
     private double shape_factor;
-    private double completeTime;
+    private long completeTime;
     private int mobileDeviceId;
+    private boolean isComplete;
+    private long makeSpan;
+    private  boolean isOverDeadline;
 
-    public APP(int Appid, String AppName, double startTime,double deadline,
+    public APP(int Appid, String AppName, long startTime,long deadline,
                long inputsize, long outputsize, long lenth, DAG dag,double CCR, double shape_factor ,int mobileDeviceId) {
         this.Appid = Appid;
         this.AppName = AppName;
@@ -26,6 +29,10 @@ public class APP {
         this.CCR = CCR;
         this.shape_factor = shape_factor;
         this.mobileDeviceId = mobileDeviceId;
+        this.isComplete = false;
+        this.makeSpan = 0;
+        this.completeTime = 0;
+        this.isOverDeadline = false;
     }
 
     public int getAppid() {
@@ -36,15 +43,15 @@ public class APP {
         return AppName;
     }
 
-    public double getStartTime() {
+    public long getStartTime() {
         return startTime;
     }
 
-    public double getDeadline() {
+    public long getDeadline() {
         return deadline;
     }
 
-    public double getCompleteTime() {
+    public long getCompleteTime() {
         return completeTime;
     }
 
@@ -84,7 +91,7 @@ public class APP {
         this.CCR = CCR;
     }
 
-    public void setCompleteTime(double completeTime) {
+    public void setCompleteTime(long completeTime) {
         this.completeTime = completeTime;
     }
 
@@ -92,7 +99,7 @@ public class APP {
         this.dag = dag;
     }
 
-    public void setDeadline(double deadline) {
+    public void setDeadline(long deadline) {
         this.deadline = deadline;
     }
 
@@ -112,7 +119,7 @@ public class APP {
         this.shape_factor = shape_factor;
     }
 
-    public void setStartTime(double startTime) {
+    public void setStartTime(long startTime) {
         this.startTime = startTime;
     }
 
@@ -122,5 +129,21 @@ public class APP {
 
     public Task getendTask(){ return dag.getTask(-2);}
 
+    public void setComplete(boolean complete) { isComplete = complete;}
+    public boolean isComplete() {return isComplete;}
+
+    public void setMakeSpan() {this.makeSpan = this.startTime - this.completeTime;}
+    public long getMakeSpan() {return makeSpan;}
+
+    public boolean isOverDeadline() {return isOverDeadline;}
+    public void setOverDeadline(long time) {
+        this.isOverDeadline = time > this.deadline;
+    }
+
+    // 实现 Comparable 接口，按照截止时间排序
+    @Override
+    public int compareTo(APP other) {
+        return Long.compare(this.deadline, other.deadline);
+    }
 }
 

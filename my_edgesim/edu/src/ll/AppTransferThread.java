@@ -4,59 +4,59 @@ import java.util.List;
 
 public class AppTransferThread extends Thread {
     private APP app;
-    private Scheduler scheduler;
+    private EdgeDevice nativeEdgeDevice;
     private double[] thisLocation;
     private double[] otherLocation;
-    private int Attractiveness;
     private int connetionTyoe;
+    private double mobile_uploadSpeed;
 
-    public AppTransferThread(APP app, Scheduler scheduler, double[] thisLocation,double[] otherLocation,
-                             int Attractiveness, int connetionTyoe) {
+    public AppTransferThread(APP app, EdgeDevice nativeEdgeDevice, double[] thisLocation,double[] otherLocation,
+                             int connetionTyoe, double mobile_uploadSpeed) {
         this.app = app;
-        this.scheduler = scheduler;
+        this.nativeEdgeDevice = nativeEdgeDevice;
         this.thisLocation = thisLocation;
         this.otherLocation = otherLocation;
-        this.Attractiveness = Attractiveness;
         this.connetionTyoe = connetionTyoe;
+        this.mobile_uploadSpeed = mobile_uploadSpeed;
     }
 
     @Override
     public void run() {
-        double delay = 0;
+        //System.out.println("开始传输app mobile: " + app.getMobileDeviceId() + " app: " + app.getAppid() + " 本地边缘设备： " + nativeEdgeDevice.getDeviceId());
+        long delay = 0;
         long app_inputSize = app.getInputsize();
         NetWork netWork_model = SimManager.getInstance().getNetworkModel();
-        double distance = calculateDistance(thisLocation, otherLocation);
+        long distance_delay = (long) (calculateDistance(thisLocation, otherLocation) / 299792458 * 1000);
+
+        // 模拟传输延迟
+        delay = switch (connetionTyoe) {
+            case 0 -> (app_inputSize  / netWork_model.getLAN_BW() + distance_delay);
+            case 1 -> (app_inputSize  / netWork_model.getWLAN_BW() + distance_delay);
+            case 2 -> (app_inputSize  / netWork_model.getGSM_BW() + distance_delay);
+            default -> delay;
+        };
+
+        // 模拟上传下载延迟
+        delay += (long)(app_inputSize *1000 / mobile_uploadSpeed + (double) (app_inputSize * 1000) / nativeEdgeDevice.getDownloadspeed());
+
+        delay = (long) Math.ceil(delay);
+
         try {
-            delay = switch (connetionTyoe) {
-                case 0 -> app_inputSize * distance / netWork_model.getLAN_BW(Attractiveness);
-                case 1 -> app_inputSize * distance / netWork_model.getWLAN_BW(Attractiveness);
-                case 2 -> app_inputSize * distance / netWork_model.getGSM_BW(Attractiveness);
-                default -> delay;
-            };
-            // 模拟网络传输延迟
-            Thread.sleep((long) (delay * 1000));  // 转换为毫秒
-            scheduler.addApp(app);
+            Thread.sleep(delay);  // 转换为毫秒
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        nativeEdgeDevice.scheduler.addApp(app);
+        //System.out.println("app传输完成 mobile: " + app.getMobileDeviceId() + " app: " + app.getAppid() + " 本地边缘设备： " + nativeEdgeDevice.getDeviceId());
     }
 
-    public double calculateDistance(double[] this_location, double[] other_location) {
-        double lat1 = Math.toRadians(this_location[0]);
-        double lon1 = Math.toRadians(this_location[1]);
-        double lat2 = Math.toRadians(other_location[0]);
-        double lon2 = Math.toRadians(other_location[1]);
+    public static double calculateDistance(double[] this_location, double[] other_location) {
+        double dLat = this_location[0] - other_location[0];
+        double dLon = this_location[1] - other_location[1];
 
-        double dLat = lat2 - lat1;
-        double dLon = lon2 - lon1;
 
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1) * Math.cos(lat2) *
-                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        final double R = 6371; // Radius of Earth in km
-        return R * c;  // Returns the distance in kilometers
+        return Math.sqrt(Math.pow(dLat,2) + Math.pow(dLon, 2)) * 1000;  // Returns the distance in kilometers
     }
 }
 

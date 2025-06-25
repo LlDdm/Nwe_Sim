@@ -1,6 +1,7 @@
 package ll;
 
 import org.apache.commons.math3.analysis.function.Max;
+import org.apache.poi.ss.formula.functions.T;
 
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -58,7 +59,7 @@ class Scheduler {
                     allocateTasksToDevices_COFE(deviceMap, sortedTask, netWork, this_mobileDevice, app);
                     break;
                 case "DCDS":
-                    allocateTasksToDevices_DCDS(deviceMap, sortedTask, netWork, this_mobileDevice);
+                    allocateTasksToDevices_DCDS(deviceMap, sortedTask, netWork, this_mobileDevice,app);
                     break;
                 case "LL":
                     allocateTasksToDevices_LL(deviceMap, sortedTask, netWork, this_mobileDevice, app);
@@ -183,10 +184,9 @@ class Scheduler {
         }
     }
 
-    private void allocateTasksToDevices_DCDS(Map<Integer, EdgeDevice> devices, List<Task> sorted_tasks, NetWork netWork, MobileDevice mobileDevice) {
+    private void allocateTasksToDevices_DCDS(Map<Integer, EdgeDevice> devices, List<Task> sorted_tasks, NetWork netWork, MobileDevice mobileDevice, APP app) {
         double MtoN_distance = calculateDistance(this_edgeDevice.getlocation(), mobileDevice.getDevice_location());
         devices.remove(0);//DCDS算法在分配设备时先不考虑云
-        APP app = mobileDevice.getApp().get(sorted_tasks.get(0).getAppid());
 
         for (Task task : sorted_tasks) {
             long MtoN_delay = 0;
@@ -235,32 +235,31 @@ class Scheduler {
                 long task_estimate_complete_time = (long) (task.getEstimate_start_time() + Math.ceil(task.getSize() * 2 / entry.getValue().getMips()) + entry.getValue().getIdle());
                 task.setEstimate_complete_time(task_estimate_complete_time);
 
+                //计算当前所选设备到其他所有设备的平均传输延迟
                 long OutputAverageTra_delay = 0;
                 double distance;
                 long BW;
-                if (task.getSuccessors().get(0).get_taskId() == -2) {
+                if (task.getSuccessors().contains(app.getendTask())) {
                     long EtoN_delay;
                     if (entry.getValue().getDeviceId() == this_edgeDevice.getDeviceId()) {
                         EtoN_delay = 0;
                     } else {
                         distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
                         BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
-                        EtoN_delay = EstimateTra_delay(task, task.getSuccessors().get(0), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
+                        EtoN_delay = EstimateTra_delay(task, app.getendTask(), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
                     }
-                    OutputAverageTra_delay = EtoN_delay + MtoN_delay;
-                } else {
-                    for (Map.Entry<Integer, EdgeDevice> other_entry : devices.entrySet()) {
+                    OutputAverageTra_delay += EtoN_delay + MtoN_delay;
+                }
+                for (Map.Entry<Integer, EdgeDevice> other_entry : devices.entrySet()) {
                         if (entry.getValue().getDeviceId() != other_entry.getValue().getDeviceId()) {
                             distance = calculateDistance(other_entry.getValue().getlocation(), entry.getValue().getlocation());
                             BW = calculateBW(other_entry.getValue(), entry.getValue(), netWork);
                             OutputAverageTra_delay += EstimateTra_avgDelay(distance, BW, other_entry.getValue().getDownloadspeed(), entry.getValue().getUploadspeed());
                         }
-                    }
-                    OutputAverageTra_delay = OutputAverageTra_delay / devices.size();
                 }
+                OutputAverageTra_delay = OutputAverageTra_delay / devices.size();
 
                 long estimateComplete_time_and_average_delay = task_estimate_complete_time + OutputAverageTra_delay;
-
                 if (estimateComplete_time_and_average_delay < Min_EstimateComplete_time_and_averageDelay) {
                     Min_EstimateComplete_time_and_averageDelay = estimateComplete_time_and_average_delay;
                     targetDevice = entry.getValue();
@@ -283,6 +282,7 @@ class Scheduler {
         devices.remove(0);
         //反向预测每个任务可能被分配到的设备
         backward_predicting(sorted_tasks, devices, netWork, this_edgeDevice);
+        Collections.reverse(sorted_tasks);
 
         double MtoN_distance = calculateDistance(this_edgeDevice.getlocation(), mobileDevice.getDevice_location());
 
@@ -310,7 +310,7 @@ class Scheduler {
 
             // 第一步，找当前任务估计完成时间+输出数据平均传输时间最小的设备
             for (Map.Entry<Integer, EdgeDevice> entry : devices.entrySet()) {
-                long Max_PreOutputPrepared_time = 0;
+                long Max_PreOutputPrepared_time = Long.MIN_VALUE;
                 for (Task pre : preTasks) {
                     double distance;
                     long tra_delay;
@@ -352,26 +352,29 @@ class Scheduler {
                 long OutputAverageTra_delay = 0;
                 double distance;
                 long BW;
-                if (task.getSuccessors().get(0).get_taskId() == -2) {
+                int sucDevice_num = 0;
+
+                if (task.getSuccessors().contains(app.getendTask())) {
                     long EtoN_delay;
                     if (entry.getValue().getDeviceId() == this_edgeDevice.getDeviceId()) {
                         EtoN_delay = 0;
                     } else {
                         distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
                         BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
-                        EtoN_delay = EstimateTra_delay(task, task.getSuccessors().get(0), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
+                        EtoN_delay = EstimateTra_delay(task, app.getendTask(), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
                     }
-                    OutputAverageTra_delay = EtoN_delay + MtoN_delay;
-                } else {
-                    for (Map.Entry<Integer, EdgeDevice> other_entry : suc_PredictingDevices.entrySet()) {
-                        if (entry.getValue().getDeviceId() != other_entry.getValue().getDeviceId()) {
-                            distance = calculateDistance(other_entry.getValue().getlocation(), entry.getValue().getlocation());
-                            BW = calculateBW(other_entry.getValue(), entry.getValue(), netWork);
-                            OutputAverageTra_delay += EstimateTra_avgDelay(distance, BW, other_entry.getValue().getDownloadspeed(), entry.getValue().getUploadspeed());
-                        }
-                    }
-                    OutputAverageTra_delay = OutputAverageTra_delay / suc_PredictingDevices.size();
+                    OutputAverageTra_delay += EtoN_delay + MtoN_delay;
+                    sucDevice_num += 1;
                 }
+                for (Map.Entry<Integer, EdgeDevice> other_entry : suc_PredictingDevices.entrySet()) {
+                    if (entry.getValue().getDeviceId() != other_entry.getValue().getDeviceId()) {
+                        distance = calculateDistance(other_entry.getValue().getlocation(), entry.getValue().getlocation());
+                        BW = calculateBW(other_entry.getValue(), entry.getValue(), netWork);
+                        OutputAverageTra_delay += EstimateTra_avgDelay(distance, BW, other_entry.getValue().getDownloadspeed(), entry.getValue().getUploadspeed());
+                    }
+                }
+                OutputAverageTra_delay = OutputAverageTra_delay / (sucDevice_num + suc_PredictingDevices.size());
+
 
                 long estimateComplete_time_and_average_delay = task_estimate_complete_time + OutputAverageTra_delay;
 
@@ -511,41 +514,50 @@ class Scheduler {
 
     public void backward_predicting(List<Task> sorted_tasks,Map<Integer, EdgeDevice> devices, NetWork netWork,
                                     EdgeDevice this_edgeDevice) {
-        sorted_tasks.sort(Comparator.comparing(Task::getR).reversed());
+        Collections.reverse(sorted_tasks);
         for(Task task : sorted_tasks) {
             long tra_delay = 0;
+            int sucDevice_num = 0;
             long Min_delay = Long.MAX_VALUE;
             double distance;
             long BW;
             List<Integer> matchedDevices_id = new ArrayList<>();
 
+            for(Task su : task.getSuccessors()){
+                if(su.get_taskId() == -2)
+                    sucDevice_num++;
+                else
+                    for(int ignored : su.getPredicting_device_Id()){
+                        sucDevice_num++;
+                    }
+            }
+
             for(Map.Entry<Integer, EdgeDevice> entry : devices.entrySet()){
                 task.setPredicting_complete_time((long) (entry.getValue().getQueueTask_EstimateMaxComplete() + Math.ceil(task.getSize() * 2 / entry.getValue().getMips()) + entry.getValue().getIdle()));
-                if(task.getSuccessors().get(0).get_taskId() == -2) {
-                    if (this_edgeDevice.getDeviceId() == entry.getValue().getDeviceId()) {
-                        tra_delay = 0;
+                for(Task suc : task.getSuccessors()) {
+                    if (suc.get_taskId() == -2) {
+                        if (this_edgeDevice.getDeviceId() == entry.getValue().getDeviceId()) {
+                            tra_delay += 0;
+                        } else {
+                            distance = calculateDistance(entry.getValue().getlocation(), this_edgeDevice.getlocation());
+                            BW = calculateBW(entry.getValue(), this_edgeDevice, netWork);
+                            tra_delay += EstimateTra_delay(task, suc, distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
+                        }
                     } else {
-                        distance = calculateDistance(entry.getValue().getlocation(), this_edgeDevice.getlocation());
-                        BW = calculateBW(entry.getValue(), this_edgeDevice, netWork);
-                        tra_delay = EstimateTra_delay(task, task.getSuccessors().get(0), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
-                    }
-                }else {
-                    int sucDevice_num = 0;
-                    for(Task suc : task.getSuccessors()) {
-                        for(int deviceID : suc.getPredicting_device_Id()){
+                        for (int deviceID : suc.getPredicting_device_Id()) {
                             EdgeDevice Pred_sucDevice = devices.get(deviceID);
-                            if(entry.getValue().getDeviceId() == Pred_sucDevice.getDeviceId()) {
+                            if (entry.getValue().getDeviceId() == Pred_sucDevice.getDeviceId()) {
                                 tra_delay += 0;
-                            }else {
+                            } else {
                                 distance = calculateDistance(entry.getValue().getlocation(), Pred_sucDevice.getlocation());
                                 BW = calculateBW(entry.getValue(), Pred_sucDevice, netWork);
-                                tra_delay += EstimateTra_delay(task,suc, distance, BW, Pred_sucDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
+                                tra_delay += EstimateTra_delay(task, suc, distance, BW, Pred_sucDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
                             }
-                            sucDevice_num++;
                         }
                     }
-                    tra_delay = tra_delay / sucDevice_num;
                 }
+
+                tra_delay = tra_delay / sucDevice_num;
                 if(tra_delay <= Min_delay) {
                     if(tra_delay < Min_delay){
                         Min_delay = tra_delay;
@@ -568,7 +580,6 @@ class Scheduler {
         app.getstartTask().setPredicting_complete_time(app.getStartTime());
 
         for(Task task : sorted_tasks) {
-            long Max_PreOutputPrepared_time = 0;
 
             Map<Integer,EdgeDevice> predictingDevices = new HashMap<>();
             for(int id : task.getPredicting_device_Id()){
@@ -577,6 +588,7 @@ class Scheduler {
             long Max_predicting_complete_time = Long.MIN_VALUE;
 
             for(Map.Entry<Integer, EdgeDevice> entry : predictingDevices.entrySet()) {
+                long Max_PreOutputPrepared_time = Long.MIN_VALUE;
                 for (Task pre : task.getPredecessors()) {
                     double distance;
                     long tra_delay;
@@ -614,8 +626,6 @@ class Scheduler {
                 //计算任务的预测完成时间
                 long task_predicting_complete_time = (long) (Math.max(entry.getValue().getQueueTask_EstimateMaxComplete(), Max_PreOutputPrepared_time) +
                         Math.ceil(task.getSize() * 2 / entry.getValue().getMips()) + entry.getValue().getIdle());
-                task.setPredicting_complete_time((task_predicting_complete_time));
-
                 if (task_predicting_complete_time > Max_predicting_complete_time) {
                     Max_predicting_complete_time = task_predicting_complete_time;
                     task.setMaxDelay_device_Id(entry.getValue().getDeviceId());

@@ -30,6 +30,7 @@ public class SimManager{
     public List<Long> result;
     public CountDownLatch wait_complete;
     private volatile boolean running;
+    public int OverDeadline;
 
     private NetWork networkModel;
     private EdgeDeviceGeneratorModel edgeDeviceGeneratorModel;
@@ -42,6 +43,7 @@ public class SimManager{
         scenarioFactory = _scenarioFactory;
         result = new ArrayList<>();
         instance = this;
+        this.OverDeadline = 0;
     }
 
     public static SimManager getInstance(){

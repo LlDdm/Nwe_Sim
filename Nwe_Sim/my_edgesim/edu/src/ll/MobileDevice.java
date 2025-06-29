@@ -162,8 +162,8 @@ public class MobileDevice {
         long makeSpan = time - app.getStartTime();
         app.setMakeSpan(makeSpan);
 
-        app.setOverDeadline(time);
-
+        if(time > app.getDeadline())
+            SimManager.getInstance().OverDeadline++;
         SimManager.getInstance().result.add(makeSpan);
         SimManager.getInstance().wait_complete.countDown();
     }

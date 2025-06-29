@@ -239,6 +239,12 @@ public class SimSettings {
         return appLookUpTable;
     }
 
+    public void setAPP_CCR(double CCR){
+        for(int i=0; i<appLookUpTable.length; i++){
+            appLookUpTable[i][9] = CCR;
+        }
+    }
+
     public double[] getAppProperties(String appName) {
         double[] result = null;
         int index = -1;

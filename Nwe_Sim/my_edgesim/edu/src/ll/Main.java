@@ -84,9 +84,14 @@ public class Main {
                     String condition = simScenario + "_" + orchestratorPolicy + "_" + useScenario;
 
                     Map<Integer, Double> appNum_averageMakeSpan = new HashMap<>();
+                    Map<Integer, Double> appNum_completeRatio = new HashMap<>();
+                    Map<Integer, Double> appNum_avgAppNum= new HashMap<>();
 
                     for (int j = SS.getMinNumOfMobileDev(); j <= SS.getMaxNumOfMobileDev(); j += SS.getMobileDevCounterSize()) {
                         double average_makeSpan = 0;
+                        double avg_completeRatio = 0;
+                        double avg_AppNum = 0;
+
                         sampleFactory.setLScenarioFactory(j, orchestratorPolicy, simScenario, useScenario);
                         manager.setManager_condition(orchestratorPolicy, simScenario, useScenario, j);
 
@@ -96,7 +101,10 @@ public class Main {
 
                         for(int h=0; h < 10 ;h++) {
                             double average_makeSpan_of_loop;
+                            double completeRatio_of_loop;
+
                             long makeSpan = 0;
+
                             manager.result.clear();
 
                             Date ScenarioStartDate = Calendar.getInstance().getTime();
@@ -128,21 +136,125 @@ public class Main {
                                 makeSpan += result;
                             }
 
-                            average_makeSpan_of_loop = (double) makeSpan / SimManager.getInstance().result.size();
+                            int resultSize = manager.result.size();
+                            completeRatio_of_loop = (double) manager.OverDeadline / resultSize;
+                            average_makeSpan_of_loop = (double) makeSpan / resultSize;
+
+                            avg_completeRatio += completeRatio_of_loop;
                             average_makeSpan += average_makeSpan_of_loop;
+                            avg_AppNum +=resultSize;
+
                         }
 
+                        avg_completeRatio /= 10;
                         average_makeSpan /= 10;
-                        appNum_averageMakeSpan.put(SimManager.getInstance().result.size(), average_makeSpan);
-                        System.out.println("app_num_average_makeSpan: " + appNum_averageMakeSpan);
+                        avg_AppNum /= 10;
+
+                        appNum_completeRatio.put(j,avg_completeRatio);
+                        appNum_averageMakeSpan.put(j, average_makeSpan);
+                        appNum_avgAppNum.put(j, avg_AppNum);
+
+                        System.out.println("Device_num_average_completeRatio: " + appNum_completeRatio);
+                        System.out.println("Device_num_average_makeSpan: " + appNum_averageMakeSpan);
+                        System.out.println("Device_num_average_appNum: " + appNum_avgAppNum);
                     }//End of devices loop
 
-                    total_result.put(condition, appNum_averageMakeSpan);
+                    total_result.put(condition + "Device_num_average_completeRatio", appNum_completeRatio);
+                    total_result.put(condition + "Device_num_average_makeSpan", appNum_averageMakeSpan);
+                    total_result.put(condition + "Device_num_average_appNum", appNum_avgAppNum);
                     System.out.println("Condition: " + condition + "done!");
 
                 }//End of orchestrators loop
             }//End of use scenarios loop
         }//End of scenarios loop
+
+        int Devices_Num = 50;
+        for (int i = 0; i < SS.getOrchestratorPolicies().length; i++) {
+            String simScenario = SS.getSimulationScenarios()[0];
+            String orchestratorPolicy = SS.getOrchestratorPolicies()[i];
+            String useScenario = SS.getUseScenarios()[0];
+            String condition = simScenario + "_" + orchestratorPolicy + "_" + useScenario;
+
+            Map<Integer, Double> CCR_averageMakeSpan = new HashMap<>();
+            Map<Integer, Double> CCR_completeRatio = new HashMap<>();
+            Map<Integer, Double> CCR_avgAppNum= new HashMap<>();
+
+            for (double CCR = 0.1; CCR < 1; CCR+=0.1) {
+                SS.setAPP_CCR(CCR);
+
+                double average_makeSpan = 0;
+                double avg_completeRatio = 0;
+                double avg_AppNum = 0;
+
+                sampleFactory.setLScenarioFactory(Devices_Num, orchestratorPolicy, simScenario, useScenario);
+                manager.setManager_condition(orchestratorPolicy, simScenario, useScenario, Devices_Num);
+
+                System.out.println("Scenario: " + simScenario + " - Policy: " + orchestratorPolicy + " - Use_Scenario: " + useScenario + "CCR " + CCR);
+                System.out.println("Duration: " + SS.getSimulationTime() / 60 + " min (warm up period: " + SS.getWarmUpPeriod() + " sce) - #devices: " + Devices_Num);
+
+                for (int h = 0; h < 10; h++) {
+                    double average_makeSpan_of_loop;
+                    double completeRatio_of_loop;
+
+                    long makeSpan = 0;
+                    manager.result.clear();
+
+                    Date ScenarioStartDate = Calendar.getInstance().getTime();
+                    now = df.format(ScenarioStartDate);
+                    System.out.println("loop:" + h + " ,Scenario started at " + now);
+
+                    manager.setLoadGeneratorModel();
+
+                    manager.wait_complete = new CountDownLatch(manager.getLoadGeneratorModel().getApp_num());
+                    manager.Running();
+
+                    // Start simulation
+                    manager.startSimulation();
+
+                    try {
+                        manager.wait_complete.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+
+                    manager.stopRunning();
+
+                    Date ScenarioEndDate = Calendar.getInstance().getTime();
+                    now = df.format(ScenarioEndDate);
+                    System.out.println("Scenario finished at " + now + ". It took " + SimUtils.getTimeDifference(ScenarioStartDate, ScenarioEndDate));
+                    System.out.println("----------------------------------------------------------------------");
+
+                    for (long result : manager.result) {
+                        makeSpan += result;
+                    }
+
+                    int resultSize = manager.result.size();
+                    completeRatio_of_loop = (double) manager.OverDeadline / resultSize;
+                    average_makeSpan_of_loop = (double) makeSpan / SimManager.getInstance().result.size();
+
+                    avg_completeRatio += completeRatio_of_loop;
+                    average_makeSpan += average_makeSpan_of_loop;
+                    avg_AppNum +=resultSize;
+                }//End of avg loop
+
+                avg_completeRatio /= 10;
+                average_makeSpan /= 10;
+                avg_AppNum /= 10;
+
+                CCR_completeRatio.put((int) (CCR*10), avg_completeRatio);
+                CCR_averageMakeSpan.put((int) (CCR*10), average_makeSpan);//这里因为类型限制，直接将CCR*10转换为整数
+                CCR_avgAppNum.put((int) (CCR*10), avg_AppNum);
+
+                System.out.println("CCR_average_completeRatio: " + CCR_completeRatio);
+                System.out.println("CCR_average_makeSpan: " + CCR_averageMakeSpan);
+                System.out.println("CCR_avgAppNum: " + CCR_avgAppNum);
+            }//End of CCR loop
+            total_result.put(condition + "CCR_average_completeRatio", CCR_completeRatio);
+            total_result.put(condition + "CCR_average_makeSpan", CCR_averageMakeSpan);
+            total_result.put(condition + "CCR_avgAppNum", CCR_avgAppNum);
+            System.out.println("Condition: " + condition + "done!");
+        }//End of orchestrators loop
+
 
         // 创建输出excel文件
         Workbook workbook = new XSSFWorkbook();

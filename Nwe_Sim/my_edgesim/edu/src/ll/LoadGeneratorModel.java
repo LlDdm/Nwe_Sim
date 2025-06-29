@@ -252,7 +252,7 @@ public class LoadGeneratorModel {
 
         List<Task> lastTasks = new ArrayList<>();
         List<Task> preTasks = new ArrayList<>();
-        preTasks.add(startTask);
+
         // 4. 生成依赖关系：确保每个节点有至少一个前驱节点
         for (int i = 1; i < layers.size() ; i++) {
             List<Task> currentLayerTasks = layers.get(i);

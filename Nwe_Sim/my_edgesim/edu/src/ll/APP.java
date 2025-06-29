@@ -14,7 +14,6 @@ public class APP implements Comparable<APP> {
     private int mobileDeviceId;
     private boolean isComplete;
     private long makeSpan;
-    private  boolean isOverDeadline;
 
     public APP(int Appid, String AppName, long startTime,long deadline,
                long inputsize, long outputsize, long lenth, DAG dag,double CCR, double shape_factor ,int mobileDeviceId) {
@@ -32,7 +31,6 @@ public class APP implements Comparable<APP> {
         this.isComplete = false;
         this.makeSpan = 0;
         this.completeTime = 0;
-        this.isOverDeadline = false;
     }
 
     public int getAppid() {
@@ -134,11 +132,6 @@ public class APP implements Comparable<APP> {
 
     public void setMakeSpan(long makeSpan) {this.makeSpan = makeSpan;}
     public long getMakeSpan() {return makeSpan;}
-
-    public boolean isOverDeadline() {return isOverDeadline;}
-    public void setOverDeadline(long time) {
-        this.isOverDeadline = time > this.deadline;
-    }
 
     // 实现 Comparable 接口，按照截止时间排序
     @Override

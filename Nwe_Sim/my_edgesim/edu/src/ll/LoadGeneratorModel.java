@@ -105,7 +105,7 @@ public class LoadGeneratorModel {
             double idlePeriod = APPlookuptable[randomAppType][3];
             double activePeriodStartTime = SimUtils.getRandomDoubleNumber(
                     SimSettings.CLIENT_ACTIVITY_START_TIME ,
-                    (SimSettings.CLIENT_ACTIVITY_START_TIME + activePeriod));  //active period starts shortly after the simulation started (e.g. 10 seconds)
+                    (SimSettings.CLIENT_ACTIVITY_START_TIME + activePeriod));  //active period starts shortly after the simulation started (e.g. 5 seconds)
             double virtualTime = activePeriodStartTime;
 
             ExponentialDistribution ps = new ExponentialDistribution(poissonMean);
@@ -179,9 +179,9 @@ public class LoadGeneratorModel {
                 }
 
 
-                long execution_time = generateUniformInt(5, 10);
+                long execution_time = generateUniformInt(10, 15);
 
-                long end_time = start_time + execution_time * 60000;
+                long end_time = start_time + execution_time * 1000;
 
                 APP app = new APP(app_id, AppName, start_time, end_time, appinputSize, appoutputSize, applength, dag, CCR, shape_factor, i);
                 apps.add(app);

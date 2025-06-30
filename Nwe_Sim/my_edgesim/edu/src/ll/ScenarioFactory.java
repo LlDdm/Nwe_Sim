@@ -31,6 +31,10 @@ public interface ScenarioFactory {
 
     public NativeEdgeDeviceGenerator getNativeEdgeDeviceGenerator();
 
-    public void setLScenarioFactory(int numOfMobileDevice, String orchestratorPolicy, String simScenario, String useScenario);
+    public void setNumOfMobileDevice(int numOfMobileDevice);
 
+
+    void  setUseScenario(String useScenario);
+
+    void  setSimScenario(String simScenario);
 }

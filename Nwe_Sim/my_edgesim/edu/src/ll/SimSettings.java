@@ -30,7 +30,7 @@ import org.w3c.dom.NodeList;
 public class SimSettings {
     private static SimSettings instance = null;
 
-    public static final double CLIENT_ACTIVITY_START_TIME = 10;
+    public static final double CLIENT_ACTIVITY_START_TIME = 5;
 
     //delimiter for output file.
     public static final String DELIMITER = ";";

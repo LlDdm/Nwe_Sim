@@ -14,7 +14,6 @@ public class LScenarioFactory implements ScenarioFactory {
     private int numOfMobileDevice;
     private long loadGenerate_time;
     private long WARM_UP_PERIOD;
-    private String orchestratorPolicy;
     private String simScenario;
     private String useScenario;
 
@@ -51,11 +50,18 @@ public class LScenarioFactory implements ScenarioFactory {
     }
 
     @Override
-    public void setLScenarioFactory(int numOfMobileDevice, String orchestratorPolicy, String simScenario, String useScenario) {
+    public void setNumOfMobileDevice(int numOfMobileDevice) {
         this.numOfMobileDevice = numOfMobileDevice;
-        this.orchestratorPolicy = orchestratorPolicy;
-        this.simScenario = simScenario;
+    }
+
+    @Override
+    public void  setUseScenario(String useScenario) {
         this.useScenario = useScenario;
+    }
+
+    @Override
+    public void  setSimScenario(String simScenario) {
+        this.simScenario = simScenario;
     }
 }
 

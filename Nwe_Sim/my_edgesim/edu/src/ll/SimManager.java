@@ -123,12 +123,13 @@ public class SimManager{
 
     public String getUseScenario(){return useScenario;}
 
-    public void setManager_condition(String orchestratorPolicy, String simScenario, String useScenario, int numOfMobileDevice){
-        this.orchestratorPolicy = orchestratorPolicy;
-        this.simScenario = simScenario;
-        this.useScenario = useScenario;
-        this.numOfMobileDevice = numOfMobileDevice;
-    }
+    public void setOrchestratorPolicy(String orchestratorPolicy){this.orchestratorPolicy = orchestratorPolicy;}
+
+    public void setNumOfMobileDevice(int numOfMobileDevice){this.numOfMobileDevice = numOfMobileDevice;}
+
+    public void setUseScenario(String useScenario){this.useScenario = useScenario;}
+
+    public void setSimScenario(String simScenario){this.simScenario = simScenario;}
 
 
 

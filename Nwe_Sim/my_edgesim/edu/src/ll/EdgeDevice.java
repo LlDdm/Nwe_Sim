@@ -118,15 +118,15 @@ class EdgeDevice{
         try {
             Task task = taskQueue.take();
 
-            long startTime = System.currentTimeMillis();
+            //long startTime = System.currentTimeMillis();
             try {
                 // 等待前驱任务到达
                 task.wait_pre.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            long endTime = System.currentTimeMillis();
-            task.setWait_pre_time(endTime - startTime);
+            //long endTime = System.currentTimeMillis();
+            //task.setWait_pre_time(endTime - startTime);
 
             startTask(task);  // 开始执行任务
         }catch (InterruptedException e) {
@@ -139,8 +139,8 @@ class EdgeDevice{
 
         long delay = (long) Math.ceil((double) (task.getSize() * 2) / mips) + getIdle();
 
-        long startTime = System.currentTimeMillis();
-        task.setStarTime(startTime);
+        //long startTime = System.currentTimeMillis();
+        //task.setStarTime(startTime);
 
         try {
             // 模拟任务执行
@@ -151,9 +151,9 @@ class EdgeDevice{
             return;
         }
 
-        long endTime = System.currentTimeMillis();
-        task.setCompleteTime(endTime);
-        task.setExecutionTime(delay - getIdle());
+        //long endTime = System.currentTimeMillis();
+        //task.setCompleteTime(endTime);
+        //task.setExecutionTime(delay - getIdle());
 
         taskQueueLength.addAndGet(-task.getSize());
         taskSets.remove(task);
@@ -173,25 +173,25 @@ class EdgeDevice{
                 new Thread(() -> startSent(task, sucTask, edges)).start();
             } else {
                 sucTask.wait_pre.countDown();
-                task.setOutput_traDelay(sucTask, 0);
+                //task.setOutput_traDelay(sucTask, 0);
             }
         }
     }
 
     public void startSent(Task currentTask, Task suctask, List<EdgeDevice> edgeDevices) {
         if (suctask.getDevice_Id() == -1) {
-            long startTime = System.currentTimeMillis();
+            //long startTime = System.currentTimeMillis();
             try {
                 // 等待后继任务分配设备
                 suctask.allocate_semaphore.acquire();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            long etime = System.currentTimeMillis();
-            currentTask.setSucLocated_waitTime(suctask, etime - startTime);
-        }else {
-            currentTask.setSucLocated_waitTime(suctask, 0);
-        }
+            //long etime = System.currentTimeMillis();
+            //currentTask.setSucLocated_waitTime(suctask, etime - startTime);
+        }//else {
+            //currentTask.setSucLocated_waitTime(suctask, 0);
+        //}
         EdgeDevice edgeDevice = edgeDevices.get(suctask.getDevice_Id());
         OutputTransferThread outputTransferThread = new OutputTransferThread(currentTask, suctask, edgeDevice, location, edgeDevice.getlocation(),
                 (int) attractiveness, uploadspeed);

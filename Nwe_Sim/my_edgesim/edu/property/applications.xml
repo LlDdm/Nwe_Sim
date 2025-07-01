@@ -3,8 +3,8 @@
     <application name="AUGMENTED_REALITY">
         <usage_percentage>30</usage_percentage>
         <poisson_interarrival>10</poisson_interarrival>
-        <active_period>30</active_period>
-        <idle_period>15</idle_period>
+        <active_period>40</active_period>
+        <idle_period>20</idle_period>
         <data_upload>15000</data_upload>
         <data_download>2500</data_download>
         <app_length>90000</app_length>
@@ -16,8 +16,8 @@
     <application name="HEALTH_APP">
         <usage_percentage>20</usage_percentage>
         <poisson_interarrival>15</poisson_interarrival>
-        <active_period>35</active_period>
-        <idle_period>60</idle_period>
+        <active_period>40</active_period>
+        <idle_period>90</idle_period>
         <data_upload>1500</data_upload>
         <data_download>12500</data_download>
         <app_length>30000</app_length>
@@ -42,8 +42,8 @@
     <application name="INFOTAINMENT_APP">
         <usage_percentage>30</usage_percentage>
         <poisson_interarrival>7</poisson_interarrival>
-        <active_period>15</active_period>
-        <idle_period>35</idle_period>
+        <active_period>30</active_period>
+        <idle_period>50</idle_period>
         <data_upload>1000</data_upload>
         <data_download>10000</data_download>
         <app_length>200000</app_length>

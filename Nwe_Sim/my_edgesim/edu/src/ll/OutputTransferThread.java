@@ -44,7 +44,7 @@ public class OutputTransferThread extends Thread {
 
             delay += receive_delay;
             delay = (long) Math.ceil(delay);
-            task.setOutput_traDelay( sucTask, delay);
+            //task.setOutput_traDelay( sucTask, delay);
             try {
                 // 模拟网络传输延迟
                 Thread.sleep(delay);  // 毫秒

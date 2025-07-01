@@ -12,7 +12,7 @@ public class APP implements Comparable<APP> {
     private double shape_factor;
     private long completeTime;
     private int mobileDeviceId;
-    private boolean isComplete;
+    //private boolean isComplete;
     private long makeSpan;
 
     public APP(int Appid, String AppName, long startTime,long deadline,
@@ -28,7 +28,7 @@ public class APP implements Comparable<APP> {
         this.CCR = CCR;
         this.shape_factor = shape_factor;
         this.mobileDeviceId = mobileDeviceId;
-        this.isComplete = false;
+        //this.isComplete = false;
         this.makeSpan = 0;
         this.completeTime = 0;
     }
@@ -127,8 +127,8 @@ public class APP implements Comparable<APP> {
 
     public Task getendTask(){ return dag.getTask(-2);}
 
-    public void setComplete(boolean complete) { isComplete = complete;}
-    public boolean isComplete() {return isComplete;}
+    //public void setComplete(boolean complete) { isComplete = complete;}
+    //public boolean isComplete() {return isComplete;}
 
     public void setMakeSpan(long makeSpan) {this.makeSpan = makeSpan;}
     public long getMakeSpan() {return makeSpan;}

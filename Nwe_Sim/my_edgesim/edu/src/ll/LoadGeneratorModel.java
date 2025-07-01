@@ -179,7 +179,7 @@ public class LoadGeneratorModel {
                 }
 
 
-                long execution_time = generateUniformInt(10, 15);
+                long execution_time = generateUniformInt(10, 20);
 
                 long end_time = start_time + execution_time * 1000;
 

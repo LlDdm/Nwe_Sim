@@ -55,7 +55,7 @@ public class MobileDevice {
     }
 
     private void sent(Task startTask, Task sucTask) {
-        long sTime = System.currentTimeMillis();
+        //long sTime = System.currentTimeMillis();
         if(sucTask.getDevice_Id() == -1) {
             try {
                 // 等待后继任务分配设备
@@ -64,8 +64,8 @@ public class MobileDevice {
                 Thread.currentThread().interrupt();
             }
         }
-        long etime = System.currentTimeMillis();
-        startTask.setSucLocated_waitTime(sucTask, etime - sTime);
+        //long etime = System.currentTimeMillis();
+        //startTask.setSucLocated_waitTime(sucTask, etime - sTime);
         EdgeDevice sucDevice = getEdgeDevices().get(sucTask.getDevice_Id());
         if (sucDevice == null) {
             throw new RuntimeException("未找到对应的设备");
@@ -109,16 +109,16 @@ public class MobileDevice {
 
         // 第一个虚拟任务的开始时间、完成时间和执行时间
         long time = System.currentTimeMillis();
-        startTask.setStarTime(time);
-        startTask.setCompleteTime(time);
-        startTask.setExecutionTime(0);
-        startTask.setScheduleQueue_waitTime(0);
-        startTask.setAllocate_time(time);
-        startTask.setArrival_time(time);
-        startTask.setTra_delay(0);
+        //startTask.setStarTime(time);
+        //startTask.setCompleteTime(time);
+        //startTask.setExecutionTime(0);
+        //startTask.setScheduleQueue_waitTime(0);
+        //startTask.setAllocate_time(time);
+        //startTask.setArrival_time(time);
+        //startTask.setTra_delay(0);
         startTask.setEstimate_start_time(time);
         startTask.setEstimate_complete_time(time);
-        startTask.setEstimate_scheduleQueue_waitTime(time);
+        //startTask.setEstimate_scheduleQueue_waitTime(time);
 
         startSentFirstTask_Outputs(startTask);// 将虚拟任务的输出数据发送到后继任务所在的设备
 
@@ -134,7 +134,7 @@ public class MobileDevice {
 
     public void is_complete(APP app){
         Task endTask = app.getendTask();
-        long sTime = System.currentTimeMillis();
+        //long sTime = System.currentTimeMillis();
         try {
             // 等待前驱任务到达
             endTask.wait_pre.await();
@@ -142,23 +142,23 @@ public class MobileDevice {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        long eTime = System.currentTimeMillis();
-        endTask.setWait_pre_time(eTime - sTime);
+        //long eTime = System.currentTimeMillis();
+        //endTask.setWait_pre_time(eTime - sTime);
 
         long time = System.currentTimeMillis();
-        endTask.setStarTime(time);
-        endTask.setTra_delay(0);
-        endTask.setCompleteTime(time);
-        endTask.setExecutionTime(0);
-        endTask.setScheduleQueue_waitTime(0);
-        endTask.setAllocate_time(time);
-        endTask.setArrival_time(time);
+        //endTask.setStarTime(time);
+        //endTask.setTra_delay(0);
+        //endTask.setCompleteTime(time);
+        //endTask.setExecutionTime(0);
+        //endTask.setScheduleQueue_waitTime(0);
+        //endTask.setAllocate_time(time);
+        //endTask.setArrival_time(time);
         endTask.setEstimate_start_time(time);
         endTask.setEstimate_complete_time(time);
-        endTask.setEstimate_scheduleQueue_waitTime(time);
+        //endTask.setEstimate_scheduleQueue_waitTime(time);
 
         app.setCompleteTime(time);
-        app.setComplete(true);
+        //app.setComplete(true);
         long makeSpan = time - app.getStartTime();
         app.setMakeSpan(makeSpan);
 

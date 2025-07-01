@@ -19,6 +19,7 @@ import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 
 public class SimManager{
@@ -157,6 +158,29 @@ public class SimManager{
     }
 
     public boolean isRunning() { return running; }
+
+    public void updateLoad(){
+        for(MobileDevice device : loadGeneratorModel.getMobileDevices()){
+            for(APP app : device.getApp()){
+                long currentTime = System.currentTimeMillis();
+                long timeOffset = currentTime - app.getStartTime();
+                app.setStartTime(currentTime);
+                app.setDeadline(app.getDeadline() + timeOffset);
+                app.setCompleteTime(0);
+                app.setMakeSpan(0);
+                for(Task task : app.getDag().getTasks()){
+                    task.allocate_semaphore = new Semaphore(0);
+                    task.wait_pre = new CountDownLatch(task.getPredecessors().size());
+                    task.setPredicting_complete_time(0);
+                    task.setMaxDelay_device_Id(0);
+                    task.setPredicting_device_Id(new ArrayList<>());
+                    task.setDevice_Id(-1);
+                    task.setEstimate_complete_time(0);
+                    task.setEstimate_start_time(0);
+                }
+            }
+        }
+    }
 
 }
 

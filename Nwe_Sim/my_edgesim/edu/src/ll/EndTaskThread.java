@@ -56,7 +56,7 @@ public class EndTaskThread extends Thread {
         delay += (outputSize *1000 / nativeEdge.getUploadspeed() + outputSize * 1000 / suc_mobile_device.getDownloadSpeed()) + delay1;
         delay = (long) Math.ceil(delay);
 
-        task.setOutput_traDelay(sucTask, delay);
+        //task.setOutput_traDelay(sucTask, delay);
         try {
             // 模拟网络传输延迟
             Thread.sleep(delay);  // 毫秒

@@ -117,6 +117,7 @@ public class Main {
                             long makeSpan = 0;
 
                             manager.result.clear();
+                            manager.OverDeadline = 0;
 
                             Date ScenarioStartDate = Calendar.getInstance().getTime();
                             now = df.format(ScenarioStartDate);
@@ -153,6 +154,7 @@ public class Main {
                             average_makeSpan += average_makeSpan_of_loop;
                             avg_AppNum +=resultSize;
 
+                            manager.updateLoad();
                         }
 
                         avg_completeRatio /= 10;
@@ -168,16 +170,16 @@ public class Main {
                         System.out.println("Device_num_average_appNum: " + appNum_avgAppNum);
                     }//End of orchestrators loop
 
-                    total_result.put(condition + "Device_num_average_completeRatio", appNum_completeRatio);
-                    total_result.put(condition + "Device_num_average_makeSpan", appNum_averageMakeSpan);
-                    total_result.put(condition + "Device_num_average_appNum", appNum_avgAppNum);
+                    total_result.put(condition + "_Device_num_average_completeRatio", appNum_completeRatio);
+                    total_result.put(condition + "_Device_num_average_makeSpan", appNum_averageMakeSpan);
+                    total_result.put(condition + "_Device_num_average_appNum", appNum_avgAppNum);
                     System.out.println("Condition: " + condition + "done!");
 
                 }//End of device loop
             }//End of use scenarios loop
         }//End of scenarios loop
 
-        int Devices_Num = 50;
+        int Devices_Num = 20;
         sampleFactory.setNumOfMobileDevice(Devices_Num);
         manager.setNumOfMobileDevice(Devices_Num);
 
@@ -189,7 +191,7 @@ public class Main {
         sampleFactory.setUseScenario(useScenario);
         manager.setUseScenario(useScenario);
 
-        for (double CCR = 0.1; CCR < 1; CCR+=0.1) {
+        for (double CCR = 0.2; CCR <= 1; CCR+=0.2) {
             SS.setAPP_CCR(CCR);
             manager.setLoadGeneratorModel();
             int App_num = manager.getLoadGeneratorModel().getApp_num();
@@ -200,17 +202,17 @@ public class Main {
 
             String condition = null;
 
-        for (int i = 0; i < SS.getOrchestratorPolicies().length; i++) {
-            String orchestratorPolicy = SS.getOrchestratorPolicies()[i];
-            manager.setOrchestratorPolicy(orchestratorPolicy);
+            for (int i = 0; i < SS.getOrchestratorPolicies().length; i++) {
+                String orchestratorPolicy = SS.getOrchestratorPolicies()[i];
+                manager.setOrchestratorPolicy(orchestratorPolicy);
 
-            condition = simScenario + "_" + orchestratorPolicy + "_" + useScenario;
+                condition = simScenario + "_" + orchestratorPolicy + "_" + useScenario;
 
                 double average_makeSpan = 0;
                 double avg_completeRatio = 0;
                 double avg_AppNum = 0;
 
-                System.out.println("Scenario: " + simScenario + " - Policy: " + orchestratorPolicy + " - Use_Scenario: " + useScenario + "CCR " + CCR);
+                System.out.println("Scenario: " + simScenario + " - Policy: " + orchestratorPolicy + " - Use_Scenario: " + useScenario + " - CCR： " + CCR);
                 System.out.println("warm up period: " + SS.getWarmUpPeriod() + " sce - #devices: " + Devices_Num);
 
                 for (int h = 0; h < 10; h++) {
@@ -254,6 +256,8 @@ public class Main {
                     avg_completeRatio += completeRatio_of_loop;
                     average_makeSpan += average_makeSpan_of_loop;
                     avg_AppNum +=resultSize;
+
+                    manager.updateLoad();
                 }//End of avg loop
 
                 avg_completeRatio /= 10;
@@ -268,12 +272,13 @@ public class Main {
                 System.out.println("CCR_average_makeSpan: " + CCR_averageMakeSpan);
                 System.out.println("CCR_avgAppNum: " + CCR_avgAppNum);
             }//End of CCR loop
-            total_result.put(condition + "CCR_average_completeRatio", CCR_completeRatio);
-            total_result.put(condition + "CCR_average_makeSpan", CCR_averageMakeSpan);
-            total_result.put(condition + "CCR_avgAppNum", CCR_avgAppNum);
+            total_result.put(condition + "_CCR_average_completeRatio", CCR_completeRatio);
+            total_result.put(condition + "_CCR_average_makeSpan", CCR_averageMakeSpan);
+            total_result.put(condition + "_CCR_avgAppNum", CCR_avgAppNum);
             System.out.println("Condition: " + condition + "done!");
         }//End of orchestrators loop
 
+        System.out.println(total_result);
 
         // 创建输出excel文件
         Workbook workbook = new XSSFWorkbook();

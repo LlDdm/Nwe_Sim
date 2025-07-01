@@ -24,15 +24,15 @@ public class Cloud extends EdgeDevice {
         try {
             Task task = getTaskQueue().take();  // 等待队列中任务到来
 
-            long startTime = System.currentTimeMillis();
+            //long startTime = System.currentTimeMillis();
             try {
                 // 等待前驱任务到达
                 task.wait_pre.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            long endTime = System.currentTimeMillis();
-            task.setWait_pre_time(endTime - startTime);
+            //long endTime = System.currentTimeMillis();
+            //task.setWait_pre_time(endTime - startTime);
 
             executorService.submit(() -> startTask(task));  // 开始执行任务
         }catch (InterruptedException e) {
@@ -45,8 +45,8 @@ public class Cloud extends EdgeDevice {
     public void startTask(Task task) {
         long delay =  (long) Math.ceil((double) (task.getSize() * 2) / getMips()) + getIdle();
 
-        long startTime = System.currentTimeMillis();
-        task.setStarTime(startTime);
+        //long startTime = System.currentTimeMillis();
+        //task.setStarTime(startTime);
 
         try {
             // 模拟任务执行
@@ -57,9 +57,9 @@ public class Cloud extends EdgeDevice {
             return;
         }
 
-        long endTime = System.currentTimeMillis();
-        task.setCompleteTime(endTime);
-        task.setExecutionTime(delay - getIdle());
+        //long endTime = System.currentTimeMillis();
+        //task.setCompleteTime(endTime);
+        //task.setExecutionTime(delay - getIdle());
 
         sentOutputs(task); // 传输输出数据
     }

@@ -5,44 +5,26 @@ public class OutputTransferThread extends Thread {
 
         private Task task;
         private Task sucTask;
-        private EdgeDevice edgeDevice;
-        private double[] thisLocation;
-        private double[] sucLocation;
-        private int Attractiveness;
-        private double uploadSpeed;
+        private EdgeDevice srcEdgeDevice;
 
-        public OutputTransferThread(Task task,Task sucTask, EdgeDevice edgeDevice, double[] thisLocation, double[] sucLocation,
-                                    int Attractiveness, double uploadSpeed) {
+        public OutputTransferThread(Task task,Task sucTask,EdgeDevice srcEdgeDevice) {
             this.task = task;
             this.sucTask = sucTask;
-            this.edgeDevice = edgeDevice;
-            this.thisLocation = thisLocation;
-            this.sucLocation = sucLocation;
-            this.Attractiveness = Attractiveness;
-            this.uploadSpeed = uploadSpeed;
+            this.srcEdgeDevice = srcEdgeDevice;
         }
 
         @Override
         public void run() {
+            EdgeDevice dstEdgeDevice = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices().get(sucTask.getDevice_Id());
             long delay;
             long outputSize = task.getSuccessorsMap().get(sucTask);
             NetWork netWork_model = SimManager.getInstance().getNetworkModel();
-            long distance_delay = (long) (calculateDistance(thisLocation, sucLocation) / 299792458 * 1000);
+            long distance_delay = (long) (calculateDistance(srcEdgeDevice.getlocation(), dstEdgeDevice.getlocation()) / 299792458 * 1000);
+            int BW = netWork_model.BWmap.get(srcEdgeDevice).get(dstEdgeDevice);
+            delay = outputSize  / BW + distance_delay;
 
-            // 模拟传输延迟
-            if(Attractiveness == edgeDevice.getAttractiveness()){
-                delay = outputSize  / netWork_model.getLAN_BW() + distance_delay;
-            }
-            else if(edgeDevice.getDeviceId() != 0){
-                delay = outputSize  / netWork_model.getMAN_BW() + distance_delay;
-            }
-            else {
-                delay = outputSize  / netWork_model.getWAN_BW() + distance_delay;
-            }
+            delay += (long)((double) (outputSize * 1000) / srcEdgeDevice.getUploadspeed() + (double) (outputSize * 1000) / dstEdgeDevice.getDownloadspeed());// 模拟上传下载延迟
 
-            long receive_delay = (long)(outputSize * 1000 / uploadSpeed + (double) (outputSize * 1000) / edgeDevice.getDownloadspeed());// 模拟上传下载延迟
-
-            delay += receive_delay;
             delay = (long) Math.ceil(delay);
             //task.setOutput_traDelay( sucTask, delay);
             try {

@@ -61,7 +61,7 @@ public class LoadGeneratorModel {
         if (APPlookuptable == null || APPlookuptable.length == 0)
             throw new IllegalStateException("App lookup table is not initialized or is empty.");
 
-        long off_line_start_time = System.currentTimeMillis();
+        long base_line_start_time = System.currentTimeMillis();
 
         //Each mobile device utilizes an app type (task type)
         for(int i=0; i<numberOfMobileDevices; i++) {
@@ -171,24 +171,27 @@ public class LoadGeneratorModel {
                 }
 
                 long start_time;
+                long offsetTime;
 
-                if(Objects.equals(useScenario, "OFF_Line")){
-                    start_time = (long) (off_line_start_time + (virtualTime + AppStart_time_offset) * 1000);
+                if(Objects.equals(useScenario, "OFF")){
+                    offsetTime = (long) ((virtualTime + AppStart_time_offset) * 1000);
                 }else {
-                    start_time = (long) (System.currentTimeMillis() + (virtualTime + AppStart_time_offset) * 1000);
+                    offsetTime = System.currentTimeMillis() - base_line_start_time + (long) ((virtualTime + AppStart_time_offset) * 1000);
                 }
 
+                start_time = base_line_start_time + offsetTime ;
 
-                long execution_time = generateUniformInt(10, 20);
 
-                long end_time = start_time + execution_time * 1000;
+                long execution_time = generateUniformInt(5, 120) * 1000L;
 
-                APP app = new APP(app_id, AppName, start_time, end_time, appinputSize, appoutputSize, applength, dag, CCR, shape_factor, i);
+                long end_time = start_time + execution_time;
+
+                APP app = new APP(app_id, AppName, start_time,end_time, execution_time,offsetTime,appinputSize, appoutputSize, applength, dag, CCR, shape_factor, i);
                 apps.add(app);
                 app_id++;
                 App_num++;
 
-                if(Objects.equals(useScenario, "OFF_Line"))
+                if(Objects.equals(useScenario, "OFF"))
                     break;
             }
 

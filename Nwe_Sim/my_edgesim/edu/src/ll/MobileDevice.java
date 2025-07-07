@@ -30,9 +30,7 @@ public class MobileDevice {
     public List<APP> getApp() {
         return appList;
     }
-    public double[] getDevice_location() {
-        return mobiledevice_location;
-    }
+    public double[] getDevice_location() {return mobiledevice_location;}
     public int getDevice_attractiveness() {
         return mobiledevice_attractiveness;
     }
@@ -42,9 +40,6 @@ public class MobileDevice {
     public int getDeviceId() { return deviceId; }
     public long getDownloadSpeed() { return downloadSpeed; }
     public long getUploadSpeed() { return uploadSpeed; }
-    public HashSet<Task> getReceiveTasks() { return receiveTasks; }
-    public synchronized void addReceiveTask(Task t) { receiveTasks.add(t); }
-    public double[] getMobiledevice_location() { return mobiledevice_location; }
 
     // 发送任务输出数据到后继任务的设备
     private void startSentFirstTask_Outputs(Task starttask){
@@ -66,17 +61,12 @@ public class MobileDevice {
         }
         //long etime = System.currentTimeMillis();
         //startTask.setSucLocated_waitTime(sucTask, etime - sTime);
-        EdgeDevice sucDevice = getEdgeDevices().get(sucTask.getDevice_Id());
-        if (sucDevice == null) {
-            throw new RuntimeException("未找到对应的设备");
-        }
-        FirstTaskTransferThread firstTaskTransferThread = new FirstTaskTransferThread(uploadSpeed, startTask, sucTask, sucDevice,
-                mobiledevice_attractiveness, connectionType, mobiledevice_location);
+//        EdgeDevice sucDevice = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices().get(sucTask.getDevice_Id());
+//        if (sucDevice == null) {
+//            throw new RuntimeException("未找到对应的设备");
+//        }
+        FirstTaskTransferThread firstTaskTransferThread = new FirstTaskTransferThread(startTask, sucTask, this);
         firstTaskTransferThread.start();
-    }
-
-    public List<EdgeDevice> getEdgeDevices(){
-        return SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices();
     }
 
     // 启动移动设备，开始生成app
@@ -103,12 +93,12 @@ public class MobileDevice {
 
     // 处理当前app
     private void operateApp(APP app) {
-        app.setStartTime(System.currentTimeMillis());
-        startSentApp(app);  // 将app上传到nativeEdgeDevice的scheduler进行调度
+        long time = System.currentTimeMillis();
+        app.setStartTime(time);
+        submitApp(app);  // 将app提交给nativeEdgeDevice的scheduler进行调度
         Task startTask = app.getstartTask();
 
         // 第一个虚拟任务的开始时间、完成时间和执行时间
-        long time = System.currentTimeMillis();
         //startTask.setStarTime(time);
         //startTask.setCompleteTime(time);
         //startTask.setExecutionTime(0);
@@ -125,11 +115,12 @@ public class MobileDevice {
         new Thread(() -> is_complete(app)).start();
     }
 
-    public void startSentApp(APP app){
+    public void submitApp(APP app){
         EdgeDevice nativeEdgeDevice = SimManager.getInstance().getNativeEdgeDeviceGenerator().getNativeDevicesMap().get(mobiledevice_attractiveness);
-        AppTransferThread appTransferThread = new AppTransferThread(app, nativeEdgeDevice, mobiledevice_location, nativeEdgeDevice.getlocation()
-                , connectionType, uploadSpeed);
-        appTransferThread.start();
+        //AppTransferThread appTransferThread = new AppTransferThread(app, nativeEdgeDevice, mobiledevice_location, nativeEdgeDevice.getlocation()
+        //        , connectionType, uploadSpeed);
+        //appTransferThread.start();
+        nativeEdgeDevice.scheduler.addApp(app);
     }
 
     public void is_complete(APP app){

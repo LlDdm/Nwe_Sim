@@ -3,60 +3,48 @@ package ll;
 public class FirstTaskTransferThread extends Thread {
     private Task task;
     private Task sucTask;
-    private EdgeDevice edgeDevice;
-    private int Attractiveness;
-    private int connectionType;
-    private double[] mobileDevice_location = new double[2];
-    private double mobileUploadSpeed;
+    private MobileDevice mobileDevice;
 
-    public FirstTaskTransferThread(double mobileUploadSpeed, Task task, Task sucTask, EdgeDevice edgeDevice,
-                                   int Attractiveness, int connectionType, double[] mobileDevice_location) {
+    public FirstTaskTransferThread( Task task, Task sucTask, MobileDevice mobileDevice) {
         this.task = task;
         this.sucTask = sucTask;
-        this.edgeDevice = edgeDevice;
-        this.Attractiveness = Attractiveness;
-        this.connectionType = connectionType;
-        this.mobileDevice_location = mobileDevice_location;
-        this.mobileUploadSpeed = mobileUploadSpeed;
+        this.mobileDevice = mobileDevice;
     }
 
     @Override
     public void run() {
-        long delay = 0;
+        EdgeDevice sucDevice = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices().get(sucTask.getDevice_Id());
+        if (sucDevice == null) {
+            throw new RuntimeException("未找到对应的设备");
+        }
+        long delay1;
+        long delay2 = 0;
         long outputSize = task.getSuccessorsMap().get(sucTask);
         NetWork netWork_model = SimManager.getInstance().getNetworkModel();
-        EdgeDevice nativeEdge = SimManager.getInstance().getNativeEdgeDeviceGenerator().getNativeDevicesMap().get(Attractiveness);
-        long distance1_delay = (long) (calculateDistance(mobileDevice_location, nativeEdge.getlocation()) / 299792458 * 1000);
+        EdgeDevice nativeEdge = SimManager.getInstance().getNativeEdgeDeviceGenerator().getNativeDevicesMap().get(mobileDevice.getDevice_attractiveness());
+        long distance1_delay = (long) (calculateDistance(mobileDevice.getDevice_location(), nativeEdge.getlocation()) / 299792458 * 1000);
         // 移动设备到本地边缘设备的传输延迟
-        delay = switch (connectionType) {
-            case 0 -> outputSize  / netWork_model.getLAN_BW() + distance1_delay;
-            case 1 -> outputSize  / netWork_model.getWLAN_BW() + distance1_delay;
-            case 2 -> outputSize  / netWork_model.getGSM_BW() + distance1_delay;
-            default -> delay;
-        };
+        int BW1 =netWork_model.mobileBW.get(mobileDevice);
+        delay1 = outputSize  / BW1 + distance1_delay;
         // 移动设备的上传延迟+本地边缘设备的下载延迟
-        delay += (long) ((double) (outputSize * 1000) / nativeEdge.getDownloadspeed() + outputSize *1000 / mobileUploadSpeed);
+        delay1 += (long) ((double) (outputSize * 1000) / nativeEdge.getDownloadspeed() + (double) (outputSize * 1000) / mobileDevice.getUploadSpeed());
 
         // 本地边缘设备到目的边缘设备的传输延迟
-        long distance2_delay = (long) (calculateDistance(nativeEdge.getlocation(), edgeDevice.getlocation()) / 299792458 * 1000);
-        if (Attractiveness == edgeDevice.getAttractiveness()) {
-            delay += outputSize  / netWork_model.getLAN_BW() + distance2_delay;
-        }
-        else if(edgeDevice.getDeviceId() != 0){
-            delay +=  outputSize  / netWork_model.getMAN_BW() + distance2_delay;
-        }
-        else {
-            delay += outputSize  / netWork_model.getWAN_BW() + distance2_delay;
-        }
-        // 本地边缘设备的上传延迟+目的边缘设备的下载延迟
-        long receive_delay = (long) (outputSize / edgeDevice.getDownloadspeed() + outputSize / nativeEdge.getUploadspeed());
-        delay += receive_delay;
+        if(nativeEdge != sucDevice) {
+            long distance2_delay = (long) (calculateDistance(nativeEdge.getlocation(), sucDevice.getlocation()) / 299792458 * 1000);
+            int BW2 = netWork_model.BWmap.get(sucDevice).get(nativeEdge);
+            delay2 = outputSize / BW2 + distance2_delay;
 
-        delay = (long) Math.ceil(delay);
+            // 本地边缘设备的上传延迟+目的边缘设备的下载延迟
+            delay2 += (outputSize * 1000 / sucDevice.getDownloadspeed() + outputSize * 1000 / nativeEdge.getUploadspeed());
+        }
+
+        delay2 += delay1;
+        delay2 = (long) Math.ceil(delay2);
         //task.setOutput_traDelay(sucTask, delay);
         try {
             // 模拟网络传输延迟
-            Thread.sleep(delay );  // 毫秒
+            Thread.sleep(delay2 );  // 毫秒
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

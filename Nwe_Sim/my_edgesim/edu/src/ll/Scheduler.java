@@ -22,12 +22,12 @@ class Scheduler {
     }
 
     // 启动调度器
-    public void startDevice(String orchestratorPolicy) {
+    public void startDevice(String orchestratorPolicy,double timeout_tolerance) {
         // 接收APP,并调度
         new Thread(() -> {
             while (SimManager.getInstance().isRunning()) {
                 if(!apps.isEmpty()) {
-                    listenForApps(orchestratorPolicy);  // 持续监听app
+                    listenForApps(orchestratorPolicy,timeout_tolerance);  // 持续监听app
                 }else {
                     Thread.yield();
                 }
@@ -36,41 +36,41 @@ class Scheduler {
     }
 
     // 将收到的app的b-level排序存入调度队列中
-    private void listenForApps(String orchestratorPolicy) {
+    private void listenForApps(String orchestratorPolicy,double timeout_tolerance) {
             try {
                 APP app = apps.take();// 获取队列中的app
                 List<Task>sortedTask = B_levelSort(app);
                 sortedTask.removeIf(task -> task.get_taskId() == -1 || task.get_taskId() == -2);
-                scheduleTasks(orchestratorPolicy,sortedTask,app);
+                scheduleTasks(orchestratorPolicy,sortedTask,app,timeout_tolerance);
             }catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
     }
 
-    private void scheduleTasks(String orchestratorPolicy, List<Task>sortedTask,APP app) {
-            List<EdgeDevice> edgeDevices = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices();
-            NetWork netWork = SimManager.getInstance().getNetworkModel();
-            List<MobileDevice> mobileDevices = SimManager.getInstance().getLoadGeneratorModel().getMobileDevices();
-            MobileDevice this_mobileDevice = mobileDevices.get(app.getMobileDeviceId());
-            Map<Integer, EdgeDevice> deviceMap = edgeDevices.stream().collect(Collectors.toMap(EdgeDevice ::getDeviceId, EdgeDevice -> EdgeDevice));
+    private void scheduleTasks(String orchestratorPolicy, List<Task>sortedTask,APP app,double timeout_tolerance) {
+        List<EdgeDevice> edgeDevices = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices();
+        NetWork netWork = SimManager.getInstance().getNetworkModel();
+        List<MobileDevice> mobileDevices = SimManager.getInstance().getLoadGeneratorModel().getMobileDevices();
+        MobileDevice this_mobileDevice = mobileDevices.get(app.getMobileDeviceId());
+        Map<Integer, EdgeDevice> deviceMap = edgeDevices.stream().collect(Collectors.toMap(EdgeDevice::getDeviceId, EdgeDevice -> EdgeDevice));
 
-            switch (orchestratorPolicy) {
-                case "COFE":
-                    allocateTasksToDevices_COFE(deviceMap, sortedTask, netWork, this_mobileDevice, app);
-                    break;
-                case "DCDS":
-                    allocateTasksToDevices_DCDS(deviceMap, sortedTask, netWork, this_mobileDevice,app);
-                    break;
-                case "LL":
-                    allocateTasksToDevices_LL(deviceMap, sortedTask, netWork, this_mobileDevice, app);
-                    break;
-                case "RAN":
-                    allocateTasksToDevices_RAN(deviceMap,sortedTask);
-                    break;
-                default:
-                    System.out.println("没找到对应算法");
-                    break;
-            }
+        switch (orchestratorPolicy) {
+            case "COFE":
+                allocateTasksToDevices_COFE(deviceMap, sortedTask, netWork, this_mobileDevice, app);
+                break;
+            case "DCDS":
+                allocateTasksToDevices_DCDS(deviceMap, sortedTask, netWork, this_mobileDevice, app);
+                break;
+            case "LL":
+                allocateTasksToDevices_LL(deviceMap, sortedTask, netWork, this_mobileDevice, app, timeout_tolerance);
+                break;
+            case "RAN":
+                allocateTasksToDevices_RAN(deviceMap, sortedTask);
+                break;
+            default:
+                System.out.println("没找到对应算法");
+                break;
+        }
     }
 
     // 为任务选择合适的设备
@@ -95,7 +95,7 @@ class Scheduler {
                     long tra_delay;
                     double BW;
                     if (pre.get_taskId() == -1) {
-                        BW = calculate_Mobile_BW(mobileDevice, netWork);
+                        BW = netWork.mobileBW.get(mobileDevice);
                         long MtoN_delay = EstimateTra_delay(pre, task, MtoN_distance, BW, this_edgeDevice.getDownloadspeed(), mobileDevice.getUploadSpeed());
 
                         long NtoE_delay;
@@ -103,7 +103,7 @@ class Scheduler {
                             NtoE_delay = 0;
                         else {
                             distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
-                            BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(this_edgeDevice).get(entry.getValue());
                             NtoE_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), this_edgeDevice.getUploadspeed());
                         }
                         tra_delay = NtoE_delay + MtoN_delay;
@@ -113,7 +113,7 @@ class Scheduler {
                             tra_delay = 0;
                         } else {
                             distance = calculateDistance(entry.getValue().getlocation(), preDevice.getlocation());
-                            BW = calculateBW(preDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(preDevice).get(entry.getValue());
                             tra_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), preDevice.getUploadspeed());
                         }
                     }
@@ -186,7 +186,6 @@ class Scheduler {
 
     private void allocateTasksToDevices_DCDS(Map<Integer, EdgeDevice> devices, List<Task> sorted_tasks, NetWork netWork, MobileDevice mobileDevice, APP app) {
         double MtoN_distance = calculateDistance(this_edgeDevice.getlocation(), mobileDevice.getDevice_location());
-        devices.remove(0);//DCDS算法在分配设备时先不考虑云
 
         for (Task task : sorted_tasks) {
             long MtoN_delay = 0;
@@ -202,7 +201,7 @@ class Scheduler {
                     long tra_delay;
                     double BW;
                     if (pre.get_taskId() == -1) {
-                        BW = calculate_Mobile_BW(mobileDevice, netWork);
+                        BW = netWork.mobileBW.get(mobileDevice);
                         MtoN_delay = EstimateTra_delay(pre, task, MtoN_distance, BW, this_edgeDevice.getDownloadspeed(), mobileDevice.getUploadSpeed());
 
                         long NtoE_delay;
@@ -210,7 +209,7 @@ class Scheduler {
                             NtoE_delay = 0;
                         } else {
                             distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
-                            BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(this_edgeDevice).get(entry.getValue());
                             NtoE_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), this_edgeDevice.getUploadspeed());
                         }
                         tra_delay = NtoE_delay + MtoN_delay;
@@ -220,7 +219,7 @@ class Scheduler {
                             tra_delay = 0;
                         } else {
                             distance = calculateDistance(entry.getValue().getlocation(), preEdgeDevice.getlocation());
-                            BW = calculateBW(preEdgeDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(preEdgeDevice).get(entry.getValue());
                             tra_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), preEdgeDevice.getUploadspeed());
                         }
                     }
@@ -239,21 +238,27 @@ class Scheduler {
                 long OutputAverageTra_delay = 0;
                 double distance;
                 long BW;
-                if (task.getSuccessors().contains(app.getendTask())) {
-                    long EtoN_delay;
-                    if (entry.getValue().getDeviceId() == this_edgeDevice.getDeviceId()) {
-                        EtoN_delay = 0;
-                    } else {
-                        distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
-                        BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
-                        EtoN_delay = EstimateTra_delay(task, app.getendTask(), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
-                    }
-                    OutputAverageTra_delay += EtoN_delay + MtoN_delay;
-                }
-                for (Map.Entry<Integer, EdgeDevice> other_entry : devices.entrySet()) {
+//                if (task.getSuccessors().contains(app.getendTask())) {
+//                    long EtoN_delay;
+//                    if (entry.getValue().getDeviceId() == this_edgeDevice.getDeviceId()) {
+//                        EtoN_delay = 0;
+//                    } else {
+//                        distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
+//                        BW = netWork.BWmap.get(targetDevice).get(entry.getValue());
+//                        EtoN_delay = EstimateTra_delay(task, app.getendTask(), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
+//                    }
+//                    OutputAverageTra_delay += EtoN_delay + MtoN_delay;
+//                }
+                // 移除云
+                Map<Integer,EdgeDevice> edgeServer = new HashMap<>();
+                for(Map.Entry<Integer, EdgeDevice> entry1 : devices.entrySet())
+                    if(entry1.getKey() != 0)
+                        edgeServer.put(entry1.getKey(), entry1.getValue());
+
+                for (Map.Entry<Integer, EdgeDevice> other_entry : edgeServer.entrySet()) {
                         if (entry.getValue().getDeviceId() != other_entry.getValue().getDeviceId()) {
                             distance = calculateDistance(other_entry.getValue().getlocation(), entry.getValue().getlocation());
-                            BW = calculateBW(other_entry.getValue(), entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(other_entry.getValue()).get(entry.getValue());
                             OutputAverageTra_delay += EstimateTra_avgDelay(distance, BW, other_entry.getValue().getDownloadspeed(), entry.getValue().getUploadspeed());
                         }
                 }
@@ -277,7 +282,7 @@ class Scheduler {
     }
 
     private void allocateTasksToDevices_LL(Map<Integer, EdgeDevice> devices, List<Task> sorted_tasks, NetWork netWork,MobileDevice mobileDevice,
-                                           APP app) {
+                                           APP app,double timeout_tolerance) {
         EdgeDevice cloud = devices.get(0);
         devices.remove(0);
         //反向预测每个任务可能被分配到的设备
@@ -286,7 +291,7 @@ class Scheduler {
 
         double MtoN_distance = calculateDistance(this_edgeDevice.getlocation(), mobileDevice.getDevice_location());
 
-        if(isAppOverdue(devices,sorted_tasks,app,mobileDevice,netWork,MtoN_distance)){
+        if(isAppOverdue(devices,sorted_tasks,app,mobileDevice,netWork,MtoN_distance,timeout_tolerance)){
             System.out.println("mobileDevice:" + mobileDevice.getDeviceId() + " app:" + app.getAppid() + " 可能超过截止时间，应提交给云执行");
             for(Task task : sorted_tasks){
                 task.setDevice_Id(cloud.getDeviceId());
@@ -316,7 +321,7 @@ class Scheduler {
                     long tra_delay;
                     double BW;
                     if (pre.get_taskId() == -1) {
-                        BW = calculate_Mobile_BW(mobileDevice, netWork);
+                        BW = netWork.mobileBW.get(mobileDevice);
                         MtoN_delay = EstimateTra_delay(pre, task, MtoN_distance, BW, this_edgeDevice.getDownloadspeed(), mobileDevice.getUploadSpeed());
 
                         long NtoE_delay;
@@ -324,7 +329,7 @@ class Scheduler {
                             NtoE_delay = 0;
                         } else {
                             distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
-                            BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(this_edgeDevice).get(entry.getValue());
                             NtoE_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), this_edgeDevice.getUploadspeed());
                         }
                         tra_delay = NtoE_delay + MtoN_delay;
@@ -334,7 +339,7 @@ class Scheduler {
                             tra_delay = 0;
                         } else {
                             distance = calculateDistance(entry.getValue().getlocation(), preEdgeDevice.getlocation());
-                            BW = calculateBW(preEdgeDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(preEdgeDevice).get(entry.getValue());
                             tra_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), preEdgeDevice.getUploadspeed());
                         }
                     }
@@ -360,7 +365,7 @@ class Scheduler {
                         EtoN_delay = 0;
                     } else {
                         distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
-                        BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
+                        BW = netWork.BWmap.get(this_edgeDevice).get(entry.getValue());
                         EtoN_delay = EstimateTra_delay(task, app.getendTask(), distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
                     }
                     OutputAverageTra_delay += EtoN_delay + MtoN_delay;
@@ -369,7 +374,7 @@ class Scheduler {
                 for (Map.Entry<Integer, EdgeDevice> other_entry : suc_PredictingDevices.entrySet()) {
                     if (entry.getValue().getDeviceId() != other_entry.getValue().getDeviceId()) {
                         distance = calculateDistance(other_entry.getValue().getlocation(), entry.getValue().getlocation());
-                        BW = calculateBW(other_entry.getValue(), entry.getValue(), netWork);
+                        BW = netWork.BWmap.get(other_entry.getValue()).get(entry.getValue());
                         OutputAverageTra_delay += EstimateTra_avgDelay(distance, BW, other_entry.getValue().getDownloadspeed(), entry.getValue().getUploadspeed());
                     }
                 }
@@ -449,25 +454,6 @@ class Scheduler {
         return Math.sqrt(Math.pow(dLat,2) + Math.pow(dLon, 2)) * 1000;  // Returns the distance in kilometers
     }
 
-    public long calculate_Mobile_BW(MobileDevice device, NetWork netWork) {
-        return switch (device.getConnectionType()) {
-            case 0 -> netWork.getLAN_BW();
-            case 1 -> netWork.getWLAN_BW();
-            case 2 -> netWork.getGSM_BW();
-            default -> 0;
-        };
-    }
-
-    public long calculateBW(EdgeDevice srcD, EdgeDevice tar, NetWork netWork) {
-        if (srcD.getAttractiveness() == tar.getAttractiveness())
-            return netWork.getLAN_BW();
-        else if (tar.getAttractiveness() == 4 || srcD.getAttractiveness() == 4)
-            return netWork.getWAN_BW();
-        else
-            return netWork.getMAN_BW();
-    }
-
-
     private long EstimateTra_delay(Task predecessor, Task thisTask, double distance, double BW, long downloadSpeed, long uploadSpeed){
         long outputSize = predecessor.getSuccessorsMap().get(thisTask);
         return (long) (outputSize / BW + distance / 299792458 * 1000 + (double) (outputSize * 1000) / downloadSpeed + (double) (outputSize * 1000) / uploadSpeed);
@@ -540,7 +526,7 @@ class Scheduler {
                             tra_delay += 0;
                         } else {
                             distance = calculateDistance(entry.getValue().getlocation(), this_edgeDevice.getlocation());
-                            BW = calculateBW(entry.getValue(), this_edgeDevice, netWork);
+                            BW = netWork.BWmap.get(entry.getValue()).get(this_edgeDevice);
                             tra_delay += EstimateTra_delay(task, suc, distance, BW, this_edgeDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
                         }
                     } else {
@@ -550,7 +536,7 @@ class Scheduler {
                                 tra_delay += 0;
                             } else {
                                 distance = calculateDistance(entry.getValue().getlocation(), Pred_sucDevice.getlocation());
-                                BW = calculateBW(entry.getValue(), Pred_sucDevice, netWork);
+                                BW = netWork.BWmap.get(entry.getValue()).get(Pred_sucDevice);
                                 tra_delay += EstimateTra_delay(task, suc, distance, BW, Pred_sucDevice.getDownloadspeed(), entry.getValue().getUploadspeed());
                             }
                         }
@@ -575,7 +561,8 @@ class Scheduler {
         }
     }
 
-    public boolean isAppOverdue(Map<Integer,EdgeDevice> devices,List<Task> sorted_tasks,APP app,MobileDevice mobileDevice,NetWork netWork,double MtoN_distance) {
+    public boolean isAppOverdue(Map<Integer,EdgeDevice> devices,List<Task> sorted_tasks,APP app,MobileDevice mobileDevice,NetWork netWork,double MtoN_distance,
+                                double timeout_tolerance) {
         long MtoN_delay;
         app.getstartTask().setPredicting_complete_time(app.getStartTime());
 
@@ -594,7 +581,7 @@ class Scheduler {
                     long tra_delay;
                     double BW;
                     if (pre.get_taskId() == -1) {
-                        BW = calculate_Mobile_BW(mobileDevice, netWork);
+                        BW = netWork.mobileBW.get(mobileDevice);
                         MtoN_delay = EstimateTra_delay(pre, task, MtoN_distance, BW, this_edgeDevice.getDownloadspeed(), mobileDevice.getUploadSpeed());
 
                         long NtoE_delay;
@@ -602,7 +589,7 @@ class Scheduler {
                             NtoE_delay = 0;
                         } else {
                             distance = calculateDistance(this_edgeDevice.getlocation(), entry.getValue().getlocation());
-                            BW = calculateBW(this_edgeDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(this_edgeDevice).get(entry.getValue());
                             NtoE_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), this_edgeDevice.getUploadspeed());
                         }
                         tra_delay = NtoE_delay + MtoN_delay;
@@ -612,7 +599,7 @@ class Scheduler {
                             tra_delay = 0;
                         } else {
                             distance = calculateDistance(entry.getValue().getlocation(), preEdgeDevice.getlocation());
-                            BW = calculateBW(preEdgeDevice, entry.getValue(), netWork);
+                            BW = netWork.BWmap.get(preEdgeDevice).get(entry.getValue());
                             tra_delay = EstimateTra_delay(pre, task, distance, BW, entry.getValue().getDownloadspeed(), preEdgeDevice.getUploadspeed());
                         }
                     }
@@ -643,7 +630,7 @@ class Scheduler {
             else{
                 EdgeDevice pre_device = devices.get(pre.getMaxDelay_device_Id());
                 double distance = calculateDistance(pre_device.getlocation(),this_edgeDevice.getlocation());
-                double BW = calculateBW(pre_device,this_edgeDevice,netWork);
+                double BW = netWork.BWmap.get(pre_device).get(this_edgeDevice);
                 tra_delay = EstimateTra_delay(pre,endTask,distance,BW,this_edgeDevice.getDownloadspeed(),pre_device.getUploadspeed());
             }
 
@@ -653,7 +640,7 @@ class Scheduler {
         }
         endTask.setPredicting_complete_time(max_end_traDelay);
 
-        return app.getDeadline() < endTask.getPredicting_complete_time();
+        return app.getDeadline()*(1+timeout_tolerance) < endTask.getPredicting_complete_time();
     }
 
 }

@@ -32,6 +32,7 @@ public class SimManager{
     public CountDownLatch wait_complete;
     private volatile boolean running;
     public int OverDeadline;
+    private double timeout_tolerance;
 
     private NetWork networkModel;
     private EdgeDeviceGeneratorModel edgeDeviceGeneratorModel;
@@ -100,7 +101,7 @@ public class SimManager{
 
         System.out.println("start scheduler...");
         for(int i=0 ;i < nativeEdgeDeviceGenerator.getNativeDevicesMap().size();i++){
-            nativeEdgeDeviceGenerator.getNativeDevicesMap().get(i).scheduler.startDevice(orchestratorPolicy);
+            nativeEdgeDeviceGenerator.getNativeDevicesMap().get(i).scheduler.startDevice(orchestratorPolicy,timeout_tolerance);
         }
         System.out.println("schedule start done.");
 
@@ -132,7 +133,8 @@ public class SimManager{
 
     public void setSimScenario(String simScenario){this.simScenario = simScenario;}
 
-
+    public double getTimeout_tolerance(){return timeout_tolerance;}
+    public void setTimeout_tolerance(double timeout_tolerance){this.timeout_tolerance = timeout_tolerance;}
 
     public NetWork getNetworkModel(){
         return networkModel;
@@ -163,9 +165,8 @@ public class SimManager{
         for(MobileDevice device : loadGeneratorModel.getMobileDevices()){
             for(APP app : device.getApp()){
                 long currentTime = System.currentTimeMillis();
-                long timeOffset = currentTime - app.getStartTime();
-                app.setStartTime(currentTime);
-                app.setDeadline(app.getDeadline() + timeOffset);
+                app.setStartTime(currentTime + app.getOffsetTime());
+                app.setDeadline(app.getStartTime() + app.getExcursionTime());
                 app.setCompleteTime(0);
                 app.setMakeSpan(0);
                 for(Task task : app.getDag().getTasks()){

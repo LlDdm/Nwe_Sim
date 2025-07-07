@@ -164,13 +164,12 @@ class EdgeDevice{
     // 发送任务输出数据到后继任务的设备
     public void sentOutputs(Task task) {
         List<Task> sucTasks = task.getSuccessors();
-        List<EdgeDevice> edges = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdge_devices();
         for (Task sucTask : sucTasks) {
             if(sucTask.get_taskId() == -2) {
                 EndTaskThread endTaskThread = new EndTaskThread(task, sucTask, this);
                 endTaskThread.start();
             } else if (sucTask.getDevice_Id() != deviceId) {
-                new Thread(() -> startSent(task, sucTask, edges)).start();
+                new Thread(() -> startSent(task, sucTask)).start();
             } else {
                 sucTask.wait_pre.countDown();
                 //task.setOutput_traDelay(sucTask, 0);
@@ -178,7 +177,7 @@ class EdgeDevice{
         }
     }
 
-    public void startSent(Task currentTask, Task suctask, List<EdgeDevice> edgeDevices) {
+    public void startSent(Task currentTask, Task suctask) {
         if (suctask.getDevice_Id() == -1) {
             //long startTime = System.currentTimeMillis();
             try {
@@ -192,9 +191,7 @@ class EdgeDevice{
         }//else {
             //currentTask.setSucLocated_waitTime(suctask, 0);
         //}
-        EdgeDevice edgeDevice = edgeDevices.get(suctask.getDevice_Id());
-        OutputTransferThread outputTransferThread = new OutputTransferThread(currentTask, suctask, edgeDevice, location, edgeDevice.getlocation(),
-                (int) attractiveness, uploadspeed);
+        OutputTransferThread outputTransferThread = new OutputTransferThread(currentTask, suctask,this);
         outputTransferThread.start();
 
     }

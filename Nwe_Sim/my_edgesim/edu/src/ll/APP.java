@@ -4,6 +4,8 @@ public class APP implements Comparable<APP> {
     private int Appid;
     private String AppName;
     private long startTime, deadline;
+    private long excursionTime;
+    private long offsetTime;
     private long inputsize;
     private long outputsize;
     private long lenth;
@@ -15,7 +17,7 @@ public class APP implements Comparable<APP> {
     //private boolean isComplete;
     private long makeSpan;
 
-    public APP(int Appid, String AppName, long startTime,long deadline,
+    public APP(int Appid, String AppName, long startTime,long deadline,long excursionTime,long offsetTime,
                long inputsize, long outputsize, long lenth, DAG dag,double CCR, double shape_factor ,int mobileDeviceId) {
         this.Appid = Appid;
         this.AppName = AppName;
@@ -31,6 +33,8 @@ public class APP implements Comparable<APP> {
         //this.isComplete = false;
         this.makeSpan = 0;
         this.completeTime = 0;
+        this.excursionTime = excursionTime;
+        this.offsetTime = offsetTime;
     }
 
     public int getAppid() {
@@ -132,6 +136,12 @@ public class APP implements Comparable<APP> {
 
     public void setMakeSpan(long makeSpan) {this.makeSpan = makeSpan;}
     public long getMakeSpan() {return makeSpan;}
+
+    public long getExcursionTime() {return excursionTime;}
+    public void setExcursionTime(long excursionTime) { this.excursionTime = excursionTime;}
+
+    public long getOffsetTime() {return offsetTime;}
+    public void setOffsetTime(long offsetTime) {this.offsetTime = offsetTime;}
 
     // 实现 Comparable 接口，按照截止时间排序
     @Override

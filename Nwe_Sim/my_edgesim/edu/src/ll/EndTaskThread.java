@@ -17,40 +17,26 @@ public class EndTaskThread extends Thread {
     public void run() {
         //System.out.println("开始传输最后任务 mobile: " + task.getMobileDeviceId() + " APP: " + task.getAppid() + " task: " + task.get_taskId());
         long delay;
-        long delay1;
+        long delay1=0;
         long outputSize = task.getSuccessorsMap().get(sucTask);
         NetWork netWork_model = SimManager.getInstance().getNetworkModel();
         List<MobileDevice> mobileDevices = SimManager.getInstance().getLoadGeneratorModel().getMobileDevices();
         MobileDevice suc_mobile_device = mobileDevices.get(sucTask.getMobileDeviceId());
         EdgeDevice nativeEdge = SimManager.getInstance().getNativeEdgeDeviceGenerator().getNativeDevicesMap().get(suc_mobile_device.getDevice_attractiveness());
 
-        if(edgeDevice.getDeviceId() == nativeEdge.getDeviceId()) {
-            delay1 = 0;
-        }
-        else {
-            delay1 = 0;
+        if(edgeDevice.getDeviceId() != nativeEdge.getDeviceId()) {
             long distance1_delay = (long) (calculateDistance(edgeDevice.getlocation(), nativeEdge.getlocation()) / 299792458 * 1000);
             // 边缘设备到本地边缘设备的传输延迟
-            if (edgeDevice.getAttractiveness() == nativeEdge.getAttractiveness()) {
-                delay1 += outputSize / netWork_model.getLAN_BW() + distance1_delay;
-            } else if (edgeDevice.getAttractiveness() == 4) {
-                delay1 += outputSize / netWork_model.getWAN_BW() + distance1_delay;
-            } else {
-                delay1 += outputSize / netWork_model.getMAN_BW() + distance1_delay;
-            }
+            int BW1 = netWork_model.BWmap.get(edgeDevice).get(nativeEdge);
+            delay1 += outputSize /BW1 + distance1_delay;
 
             // 边缘设备上传延迟+本地边缘设备下载延迟
-            long receive_delay = (outputSize * 1000 / nativeEdge.getDownloadspeed() + outputSize * 1000 / edgeDevice.getUploadspeed());
-            delay1 += receive_delay;
+            delay1 += (outputSize * 1000 / nativeEdge.getDownloadspeed() + outputSize * 1000 / edgeDevice.getUploadspeed());
         }
 
-        long distance2_delay = (long) (calculateDistance(nativeEdge.getlocation(), suc_mobile_device.getMobiledevice_location()) / 299792458 * 1000);
-        delay = switch (suc_mobile_device.getConnectionType()) {
-            case 0 -> outputSize  / netWork_model.getLAN_BW() + distance2_delay;
-            case 1 -> outputSize  / netWork_model.getWLAN_BW() + distance2_delay;
-            case 2 -> outputSize  / netWork_model.getGSM_BW() + distance2_delay;
-            default -> 0;
-        };
+        long distance2_delay = (long) (calculateDistance(nativeEdge.getlocation(), suc_mobile_device.getDevice_location()) / 299792458 * 1000);
+        int BW2 = netWork_model.mobileBW.get(suc_mobile_device);
+        delay = outputSize  / BW2 + distance2_delay;
 
         // 移动设备下载延迟+本地边缘设备的上传延迟
         delay += (outputSize *1000 / nativeEdge.getUploadspeed() + outputSize * 1000 / suc_mobile_device.getDownloadSpeed()) + delay1;
